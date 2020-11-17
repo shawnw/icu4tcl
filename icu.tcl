@@ -27,6 +27,8 @@ if {![critcl::compiling]} {
     error "This extension cannot be compiled without critcl enabled"
 }
 
+critcl::tcl 8.6
+
 critcl::license {Shawn Wagner} {MIT license}
 
 critcl::summary {TCL bindings to ICU}
@@ -199,13 +201,14 @@ critcl::ccommand icu::string::foldcase {cdata interp objc objv} {
     }
 
     dest_capacity = Tcl_GetCharLength(objv[idx]) + 1;
-    dest = ckalloc(dest_capacity * sizeof(Tcl_UniChar));
+    dest = (Tcl_UniChar *)ckalloc(dest_capacity * sizeof(Tcl_UniChar));
     uint32_t dest_len = u_strFoldCase(dest, dest_capacity,
                                       Tcl_GetUnicode(objv[idx]), -1,
                                       options, &err);
     if (err == U_BUFFER_OVERFLOW_ERROR || dest_len > dest_capacity) {
         dest_capacity = dest_len + 1;
-        dest = ckrealloc(dest, dest_capacity * sizeof(Tcl_UniChar));
+        dest = (Tcl_UniChar *)ckrealloc((char *)dest,
+                                        dest_capacity * sizeof(Tcl_UniChar));
         err = U_ZERO_ERROR;
         dest_len = u_strFoldCase(dest, dest_capacity,
                                  Tcl_GetUnicode(objv[idx]), -1,
@@ -214,12 +217,12 @@ critcl::ccommand icu::string::foldcase {cdata interp objc objv} {
 
     if (U_FAILURE(err)) {
         set_icu_error_result(interp, "u_strFoldCase", err);
-        ckfree(dest);
+        ckfree((char *)dest);
         return TCL_ERROR;
     }
 
     Tcl_SetObjResult(interp, Tcl_NewUnicodeObj(dest, dest_len));
-    ckfree(dest);
+    ckfree((char *)dest);
     return TCL_OK;
 }
 
@@ -250,14 +253,15 @@ critcl::ccommand icu::string::toupper {cdata interp objc objv} {
     }
 
     dest_capacity = Tcl_GetCharLength(objv[idx]) + 1;
-    dest = ckalloc(dest_capacity * sizeof(Tcl_UniChar));
+    dest = (Tcl_UniChar *)ckalloc(dest_capacity * sizeof(Tcl_UniChar));
 
     uint32_t dest_len = u_strToUpper(dest, dest_capacity,
                                      Tcl_GetUnicode(objv[idx]), -1,
                                      loc, &err);
     if (err == U_BUFFER_OVERFLOW_ERROR || dest_len > dest_capacity) {
         dest_capacity = dest_len + 1;
-        dest = ckrealloc(dest, dest_capacity * sizeof(Tcl_UniChar));
+        dest = (Tcl_UniChar *)ckrealloc((char *)dest,
+                                        dest_capacity * sizeof(Tcl_UniChar));
         err = U_ZERO_ERROR;
         dest_len = u_strToUpper(dest, dest_capacity,
                                 Tcl_GetUnicode(objv[idx]), -1,
@@ -266,12 +270,12 @@ critcl::ccommand icu::string::toupper {cdata interp objc objv} {
 
     if (U_FAILURE(err)) {
         set_icu_error_result(interp, "u_strToUpper", err);
-        ckfree(dest);
+        ckfree((char *)dest);
         return TCL_ERROR;
     }
 
     Tcl_SetObjResult(interp, Tcl_NewUnicodeObj(dest, dest_len));
-    ckfree(dest);
+    ckfree((char *)dest);
     return TCL_OK;
 }
 
@@ -302,14 +306,15 @@ critcl::ccommand icu::string::tolower {cdata interp objc objv} {
     }
 
     dest_capacity = Tcl_GetCharLength(objv[idx]) + 1;
-    dest = ckalloc(dest_capacity * sizeof(Tcl_UniChar));
+    dest = (Tcl_UniChar *)ckalloc(dest_capacity * sizeof(Tcl_UniChar));
 
     uint32_t dest_len = u_strToLower(dest, dest_capacity,
                                      Tcl_GetUnicode(objv[idx]), -1,
                                      loc, &err);
     if (err == U_BUFFER_OVERFLOW_ERROR || dest_len > dest_capacity) {
         dest_capacity = dest_len + 1;
-        dest = ckrealloc(dest, dest_capacity * sizeof(Tcl_UniChar));
+        dest = (Tcl_UniChar *)ckrealloc((char *)dest,
+                                        dest_capacity * sizeof(Tcl_UniChar));
         err = U_ZERO_ERROR;
         dest_len = u_strToLower(dest, dest_capacity,
                                 Tcl_GetUnicode(objv[idx]), -1,
@@ -318,12 +323,12 @@ critcl::ccommand icu::string::tolower {cdata interp objc objv} {
 
     if (U_FAILURE(err)) {
         set_icu_error_result(interp, "u_strToLower", err);
-        ckfree(dest);
+        ckfree((char *)dest);
         return TCL_ERROR;
     }
 
     Tcl_SetObjResult(interp, Tcl_NewUnicodeObj(dest, dest_len));
-    ckfree(dest);
+    ckfree((char *)dest);
     return TCL_OK;
 }
 
@@ -354,14 +359,15 @@ critcl::ccommand icu::string::totitle {cdata interp objc objv} {
     }
 
     dest_capacity = Tcl_GetCharLength(objv[idx]) + 1;
-    dest = ckalloc(dest_capacity * sizeof(Tcl_UniChar));
+    dest = (Tcl_UniChar *)ckalloc(dest_capacity * sizeof(Tcl_UniChar));
 
     uint32_t dest_len = u_strToTitle(dest, dest_capacity,
                                      Tcl_GetUnicode(objv[idx]), -1,
                                      NULL, loc, &err);
     if (err == U_BUFFER_OVERFLOW_ERROR || dest_len > dest_capacity) {
         dest_capacity = dest_len + 1;
-        dest = ckrealloc(dest, dest_capacity * sizeof(Tcl_UniChar));
+        dest = (Tcl_UniChar *)ckrealloc((char *)dest,
+                                        dest_capacity * sizeof(Tcl_UniChar));
         err = U_ZERO_ERROR;
         dest_len = u_strToTitle(dest, dest_capacity,
                                 Tcl_GetUnicode(objv[idx]), -1,
@@ -370,17 +376,18 @@ critcl::ccommand icu::string::totitle {cdata interp objc objv} {
 
     if (U_FAILURE(err)) {
         set_icu_error_result(interp, "u_strToTitle", err);
-        ckfree(dest);
+        ckfree((char *)dest);
         return TCL_ERROR;
     }
 
     Tcl_SetObjResult(interp, Tcl_NewUnicodeObj(dest, dest_len));
-    ckfree(dest);
+    ckfree((char *)dest);
     return TCL_OK;
 }
 
 critcl::ccode {
-    int do_normalize(UNormalizer2 *norm, Tcl_Interp *interp, int objc, Tcl_Obj *objv[]) {
+    int do_normalize(const UNormalizer2 *norm, Tcl_Interp *interp, int objc,
+                     Tcl_Obj * const * objv) {
         UErrorCode err = U_ZERO_ERROR;
         Tcl_UniChar *dest = NULL;
         int32_t destlen = 0, destcap = 0;
@@ -395,19 +402,20 @@ critcl::ccode {
         }
         destcap *= 2;
         destcap += 1;
-        dest = ckalloc(destcap * sizeof(Tcl_UniChar));
+        dest = (Tcl_UniChar *)ckalloc(destcap * sizeof(Tcl_UniChar));
         destlen = unorm2_normalize(norm, Tcl_GetUnicode(objv[1]), -1,
                                    dest, destcap, &err);
         if (err == U_BUFFER_OVERFLOW_ERROR || destlen > destcap) {
             destcap = (destlen * 2) + 1;
-            dest = ckrealloc(dest, destcap * sizeof(Tcl_UniChar));
+            dest = (Tcl_UniChar *)ckrealloc((char *)dest,
+                                            destcap * sizeof(Tcl_UniChar));
             err = U_ZERO_ERROR;
             destlen = unorm2_normalize(norm, Tcl_GetUnicode(objv[1]), -1,
                                        dest, destcap, &err);
         }
         if (U_FAILURE(err)) {
             set_icu_error_result(interp, "unorm2_normalize", err);
-            ckfree(dest);
+            ckfree((char *)dest);
             return TCL_ERROR;
         }
         for (int i = 2; i < objc; i += 1)
@@ -418,7 +426,8 @@ critcl::ccode {
                                                           &err);
          if (err == U_BUFFER_OVERFLOW_ERROR || newlen > destcap) {
              destcap = (newlen * 2) + 1;
-             dest = ckrealloc(dest, destcap * sizeof(Tcl_UniChar));
+             dest = (Tcl_UniChar *)ckrealloc((char *)dest,
+                                             destcap * sizeof(Tcl_UniChar));
              err = U_ZERO_ERROR;
              newlen = unorm2_normalizeSecondAndAppend(norm,
                                                       dest, destlen, destcap,
@@ -429,13 +438,13 @@ critcl::ccode {
              destlen = newlen;
          } else {
              set_icu_error_result(interp, "unorm2_normalizeSecondAndAppend", err);
-             ckfree(dest);
+             ckfree((char *)dest);
              return TCL_ERROR;
          }
      }
         dest[destlen] = 0;
         Tcl_SetObjResult(interp, Tcl_NewUnicodeObj(dest, destlen));
-        ckfree(dest);
+        ckfree((char *)dest);
         return TCL_OK;
     }
 }
@@ -788,10 +797,14 @@ proc icu::test {} {
 
 
     # Normalization
-    # set thugs {"𝖙𝖍𝖚𝖌 𝖑𝖎𝖋𝖊" "𝓽𝓱𝓾𝓰 𝓵𝓲𝓯𝓮" "𝓉𝒽𝓊𝑔 𝓁𝒾𝒻𝑒" "𝕥𝕙𝕦𝕘 𝕝𝕚𝕗𝕖"
-    #   "ｔｈｕｇ ｌｉｆｅ"}
-    set thugs {"ｔｈｕｇ ｌｉｆｅ"}
+    if {$::tcl_version >= 8.7} {
+        set thugs {"𝖙𝖍𝖚𝖌 𝖑𝖎𝖋𝖊" "𝓽𝓱𝓾𝓰 𝓵𝓲𝓯𝓮" "𝓉𝒽𝓊𝑔 𝓁𝒾𝒻𝑒" "𝕥𝕙𝕦𝕘 𝕝𝕚𝕗𝕖"
+            "ｔｈｕｇ ｌｉｆｅ"}
+    }
+    lappend thugs "ｔｈｕｇ ｌｉｆｅ"
     foreach thug $thugs {
+        puts "string length {$thug} -> [::string length $thug]"
+        puts "icu::string length {$thug} -> [icu::string length $thug]"
         puts "NFC: $thug [icu::string nfc "-> " $thug " represent"]"
         puts "NFD: $thug [icu::string nfd "-> " $thug " represent"]"
         puts "NFKC: $thug [icu::string nfkc "-> " $thug " represent"]"
