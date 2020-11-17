@@ -27,6 +27,14 @@ if {![critcl::compiling]} {
     error "This extension cannot be compiled without critcl enabled"
 }
 
+critcl::license {Shawn Wagner} {MIT license}
+
+critcl::summary {TCL bindings to ICU}
+
+critcl::description {This package exports ICU (International
+Components For Unicode) functionality to Tcl to improve its unicode
+handling capability.}
+
 critcl::cflags {*}[exec icu-config --cflags]
 critcl::ldflags {*}[exec icu-config --ldflags-searchpath]
 critcl::clibraries {*}[exec icu-config --ldflags-libsonly]
