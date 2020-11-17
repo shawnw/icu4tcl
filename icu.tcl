@@ -26,6 +26,8 @@ critcl::ccode {
 }
 
 critcl::cinit {
+    _Static_assert(sizeof(UChar) == sizeof(Tcl_UniChar),
+                   "Tcl_UniChar and UChar sizes differ");
     Tcl_CreateNamespace(ip, "icu", NULL, NULL);
     Tcl_CreateNamespace(ip, "icu::string", NULL, NULL);
     Tcl_SetVar2Ex(ip, "icu::icu_version", NULL, Tcl_NewStringObj(U_ICU_VERSION, -1), 0);
@@ -79,6 +81,52 @@ critcl::ccommand icu::string::first_not_of {cdata interp objc objv} {
     } else {
         Tcl_SetObjResult(interp, Tcl_NewIntObj(-1));
     }
+    return TCL_OK;
+}
+
+critcl::ccommand icu::string::foldCase {cdata interp objc objv} {
+    uint32_t options = U_FOLD_CASE_DEFAULT;
+    Tcl_UniChar *dest = NULL;
+    uint32_t dest_capacity = 0;
+    UErrorCode err = U_ZERO_ERROR;
+    int idx = 1;
+
+    if (objc == 1 | objc > 3) {
+        Tcl_WrongNumArgs(interp, 1, objv, "?-exclude-special? string");
+        return TCL_ERROR;
+    }
+
+    if (objc == 3) {
+        const char *arg = Tcl_GetString(objv[1]);
+        if (strcmp(arg, "-exclude-special") == 0) {
+            options = U_FOLD_CASE_EXCLUDE_SPECIAL_I;
+            idx = 2;
+        } else if (arg[0] == '-') {
+            Tcl_SetResult(interp, "Unknown option", TCL_STATIC);
+            return TCL_ERROR;
+        } else {
+            Tcl_WrongNumArgs(interp, 1, objv, "?-exclude-special? string");
+            return TCL_ERROR;
+        }
+    }
+
+    uint32_t dest_len = u_strFoldCase(dest, dest_capacity, Tcl_GetUnicode(objv[idx]),
+                                      -1, options, &err);
+    if (err == U_BUFFER_OVERFLOW_ERROR) {
+        dest_capacity = dest_len + 1;
+        dest = Tcl_Alloc(dest_capacity * sizeof(Tcl_UniChar));
+        err = U_ZERO_ERROR;
+        dest_len = u_strFoldCase(dest, dest_capacity, Tcl_GetUnicode(objv[idx]),
+                                 -1, options, &err);
+    }
+
+    if (U_FAILURE(err)) {
+        set_icu_error_result(interp, "u_strFoldCase", err);
+        return TCL_ERROR;
+    }
+
+    Tcl_SetObjResult(interp, Tcl_NewUnicodeObj(dest, dest_len));
+    Tcl_Free(dest);
     return TCL_OK;
 }
 
@@ -185,6 +233,8 @@ proc icu::test {} {
     rename $coll ""
     icu::collator myColl en_US
     puts "compare bar foo: [myColl bar foo]"
+    puts "casefolded fOoBaR\u0130d: [icu::string foldCase fOoBaR\u0130d]"
+    puts "casefolded excluded fOoBaR\u0130d: [icu::string foldCase -exclude-special fOoBaR\u0130d]"
 }
 
 # If this is the main script...

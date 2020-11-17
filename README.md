@@ -49,6 +49,12 @@ Returns the index of the first character in `s` that is also in
 Returns the index of the first character in `s` that is not in
 `chars`. Returns -1 if all are.
 
+#### icu::string foldCase ?-exclude-special? s
+
+Returns a case-folded version of `s`. If `-exclude-special`is given,
+excludes mappings for the Turkish dotted I (U+0130) and dotless i
+(U+0131), etc.
+
 ### icu::collator ?name? ?locale?
 
 Creates and returns the name of a new command that collates
