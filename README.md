@@ -87,6 +87,22 @@ Returns a case-folded version of `s`. If `-exclude-special-i`is given,
 excludes mappings for the Turkish dotted I (U+0130) and dotless i
 (U+0131), etc.
 
+#### icu::string nfc ?string ...?
+
+Returns all its arguments concatenated together and normalized in NFC.
+
+#### icu::string nfd ?string ...?
+
+Returns all its arguments concatenated together and normalized in NFD.
+
+#### icu::string nfkc ?string ...?
+
+Returns all its arguments concatenated together and normalized in NFKC.
+
+#### icu::string nfkd ?string ...?
+
+Returns all its arguments concatenated together and normalized in NFKD.
+
 ### icu::collator ?name? ?locale?
 
 Creates and returns the name of a new command that collates

@@ -53,6 +53,7 @@ critcl::ccode {
     #include <unicode/ucol.h>
     #include <unicode/ubrk.h>
     #include <unicode/uloc.h>
+    #include <unicode/unorm2.h>
     #include <stdlib.h>
     #include <stdio.h>
     #include <string.h>
@@ -76,7 +77,9 @@ critcl::ccode {
         Tcl_AddErrorInfo(interp, "Internal ICU error");
         Tcl_SetErrorCode(interp, "ICU", u_errorName(err), (char *)NULL);
         Tcl_SetResult(interp, (char *)msg, TCL_STATIC);
-    }
+     }
+
+    static UErrorCode globalErr = U_ZERO_ERROR;
 }
 
 # Return the number of codepoints in a string. Differs from 8.X [string
@@ -374,6 +377,83 @@ critcl::ccommand icu::string::totitle {cdata interp objc objv} {
     Tcl_SetObjResult(interp, Tcl_NewUnicodeObj(dest, dest_len));
     ckfree(dest);
     return TCL_OK;
+}
+
+critcl::ccode {
+    int do_normalize(UNormalizer2 *norm, Tcl_Interp *interp, int objc, Tcl_Obj *objv[]) {
+        UErrorCode err = U_ZERO_ERROR;
+        Tcl_UniChar *dest = NULL;
+        int32_t destlen = 0, destcap = 0;
+
+        if (objc == 1) {
+            Tcl_SetResult(interp, "", TCL_STATIC);
+            return TCL_OK;
+        }
+
+        for (int i = 1; i < objc; i += 1) {
+            destcap += Tcl_GetCharLength(objv[i]);
+        }
+        destcap *= 2;
+        destcap += 1;
+        dest = ckalloc(destcap * sizeof(Tcl_UniChar));
+        destlen = unorm2_normalize(norm, Tcl_GetUnicode(objv[1]), -1,
+                                   dest, destcap, &err);
+        if (err == U_BUFFER_OVERFLOW_ERROR || destlen > destcap) {
+            destcap = (destlen * 2) + 1;
+            dest = ckrealloc(dest, destcap * sizeof(Tcl_UniChar));
+            err = U_ZERO_ERROR;
+            destlen = unorm2_normalize(norm, Tcl_GetUnicode(objv[1]), -1,
+                                       dest, destcap, &err);
+        }
+        if (U_FAILURE(err)) {
+            set_icu_error_result(interp, "unorm2_normalize", err);
+            ckfree(dest);
+            return TCL_ERROR;
+        }
+        for (int i = 2; i < objc; i += 1)
+        {
+         int32_t newlen = unorm2_normalizeSecondAndAppend(norm,
+                                                          dest, destlen, destcap,
+                                                          Tcl_GetUnicode(objv[i]),-1,
+                                                          &err);
+         if (err == U_BUFFER_OVERFLOW_ERROR || newlen > destcap) {
+             destcap = (newlen * 2) + 1;
+             dest = ckrealloc(dest, destcap * sizeof(Tcl_UniChar));
+             err = U_ZERO_ERROR;
+             newlen = unorm2_normalizeSecondAndAppend(norm,
+                                                      dest, destlen, destcap,
+                                                      Tcl_GetUnicode(objv[i]), -1,
+                                                      &err);
+     }
+         if (U_SUCCESS(err)) {
+             destlen = newlen;
+         } else {
+             set_icu_error_result(interp, "unorm2_normalizeSecondAndAppend", err);
+             ckfree(dest);
+             return TCL_ERROR;
+         }
+     }
+        dest[destlen] = 0;
+        Tcl_SetObjResult(interp, Tcl_NewUnicodeObj(dest, destlen));
+        ckfree(dest);
+        return TCL_OK;
+    }
+}
+
+critcl::ccommand icu::string::nfc {cdata interp objc objv} {
+    return do_normalize(unorm2_getNFCInstance(&globalErr), interp, objc, objv);
+}
+
+critcl::ccommand icu::string::nfd {cdata interp objc objv} {
+    return do_normalize(unorm2_getNFDInstance(&globalErr), interp, objc, objv);
+}
+
+critcl::ccommand icu::string::nfkc {cdata interp objc objv} {
+    return do_normalize(unorm2_getNFKCInstance(&globalErr), interp, objc, objv);
+}
+
+critcl::ccommand icu::string::nfkd {cdata interp objc objv} {
+    return do_normalize(unorm2_getNFKDInstance(&globalErr), interp, objc, objv);
 }
 
 critcl::ccode {
@@ -705,6 +785,18 @@ proc icu::test {} {
     puts "titlecase $s: [icu::string totitle $s]"
     puts "casefolded $s: [icu::string foldcase $s]"
     puts "casefolded excluded $s: [icu::string foldcase -exclude-special-i $s]"
+
+
+    # Normalization
+    # set thugs {"𝖙𝖍𝖚𝖌 𝖑𝖎𝖋𝖊" "𝓽𝓱𝓾𝓰 𝓵𝓲𝓯𝓮" "𝓉𝒽𝓊𝑔 𝓁𝒾𝒻𝑒" "𝕥𝕙𝕦𝕘 𝕝𝕚𝕗𝕖"
+    #   "ｔｈｕｇ ｌｉｆｅ"}
+    set thugs {"ｔｈｕｇ ｌｉｆｅ"}
+    foreach thug $thugs {
+        puts "NFC: $thug [icu::string nfc "-> " $thug " represent"]"
+        puts "NFD: $thug [icu::string nfd "-> " $thug " represent"]"
+        puts "NFKC: $thug [icu::string nfkc "-> " $thug " represent"]"
+        puts "NFKD: $thug [icu::string nfkd "-> " $thug " represent"]"
+    }
 
     # Comparision
     puts "compare -nocase {$s} {$uc_s}: [icu::string compare -nocase $s $uc_s]"
