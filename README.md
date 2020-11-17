@@ -53,7 +53,25 @@ Returns the index of the first character in `s` that is also in
 Returns the index of the first character in `s` that is not in
 `chars`. Returns -1 if all are.
 
-#### icu::string foldCase ?-exclude-special? s
+#### icu::string toupper ?-locale locale? s
+
+Returns an upper-cased version of `s`, according to the optional
+`locale` rules. If the locale is an empty string, uses the root
+locale. If not present, uses the default one.
+
+#### icu::string tolower ?-locale locale? s
+
+Returns an lower-cased version of `s`, according to the optional
+`locale` rules. If the locale is an empty string, uses the root
+locale. If not present, uses the default one.
+
+#### icu::string totitle ?-locale locale? s
+
+Returns an title-cased version of `s`, according to the optional
+`locale` rules. If the locale is an empty string, uses the root
+locale. If not present, uses the default one.
+
+#### icu::string foldcase ?-exclude-special? s
 
 Returns a case-folded version of `s`. If `-exclude-special`is given,
 excludes mappings for the Turkish dotted I (U+0130) and dotless i
