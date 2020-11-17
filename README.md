@@ -56,6 +56,10 @@ dotless i U+0131) characters (Only meaningful with `-nocase`).
 
 For locale-specific string comparision, see `icu::collator`.
 
+#### icu::string equal ?-nocase? ?-exclude-special-i? s1 s2
+
+Returns 1 if the two strings are equal, 0 if not.
+
 #### icu::string index s i
 
 Return the character at the `i`th code point of `s`. If the string is

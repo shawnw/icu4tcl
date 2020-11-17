@@ -827,6 +827,14 @@ critcl::ccommand icu::locale::list {cdata interp objc objv} {
 }
 
 namespace eval icu::string {
+    proc equal args {
+        set nargs [llength $args]
+        if {$nargs < 2 || $nargs > 4} {
+            error "icu::string equal ?-nocase? ?-exclude-special-i? string1 string2"
+        }
+        expr {[compare {*}$args] == 0}
+    }
+
     namespace export {[a-z]*}
     namespace ensemble create
 }
