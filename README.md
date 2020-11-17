@@ -53,6 +53,16 @@ dotless i U+0131) characters (Only meaningful with `-nocase`).
 
 For locale-specific string comparision, see `icu::collator`.
 
+#### icu::string first needleString haystackString
+
+Returns the index of the first occurence of `needleString` in
+`haystackString`, or -` if not found.
+
+#### icu::string last needleString haystackString
+
+Returns the index of the last occurence of `needleString` in
+`haystackString`, or -` if not found.
+
 #### icu::string first_of s chars
 
 Returns the index of the first character in `s` that is also in

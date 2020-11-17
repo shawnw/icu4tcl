@@ -141,6 +141,41 @@ critcl::ccommand icu::string::compare {cdata interp objc objv} {
         return TCL_OK;
 }
 
+critcl::ccommand icu::string::first {cdata interp objc objv} {
+    if (objc != 3) {
+        Tcl_WrongNumArgs(interp, 1, objv, "needleString haystackString");
+        return TCL_ERROR;
+    }
+
+    const Tcl_UniChar *s = Tcl_GetUnicode(objv[2]);
+    const Tcl_UniChar *loc = u_strFindFirst(s, -1, Tcl_GetUnicode(objv[1]), -1);
+    int32_t pos = -1;
+    if (loc) {
+        pos = u_countChar32(s, loc - s);
+    } else {
+        pos = -1;
+    }
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(pos));
+    return TCL_OK;
+}
+
+critcl::ccommand icu::string::last {cdata interp objc objv} {
+    if (objc != 3) {
+        Tcl_WrongNumArgs(interp, 1, objv, "needleString haystackString");
+        return TCL_ERROR;
+    }
+
+    const Tcl_UniChar *s = Tcl_GetUnicode(objv[2]);
+    const Tcl_UniChar *loc = u_strFindLast(s, -1, Tcl_GetUnicode(objv[1]), -1);
+    int32_t pos = -1;
+    if (loc) {
+        pos = u_countChar32(s, loc - s);
+    } else {
+        pos = -1;
+    }
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(pos));
+    return TCL_OK;
+}
 
 # Return the index of the first codepoint in string that is included
 # in characters.
@@ -152,7 +187,7 @@ critcl::ccommand icu::string::first_of {cdata interp objc objv} {
     UChar *str = Tcl_GetUnicode(objv[1]);
     int32_t pos = u_strcspn(str, Tcl_GetUnicode(objv[2]));
     if (str[pos]) {
-        Tcl_SetObjResult(interp, Tcl_NewIntObj(pos));
+        Tcl_SetObjResult(interp, Tcl_NewIntObj(u_countChar32(str, pos)));
     } else {
         Tcl_SetObjResult(interp, Tcl_NewIntObj(-1));
     }
@@ -167,7 +202,7 @@ critcl::ccommand icu::string::first_not_of {cdata interp objc objv} {
     UChar *str = Tcl_GetUnicode(objv[1]);
     int32_t pos = u_strspn(str, Tcl_GetUnicode(objv[2]));
     if (str[pos]) {
-        Tcl_SetObjResult(interp, Tcl_NewIntObj(pos));
+        Tcl_SetObjResult(interp, Tcl_NewIntObj(u_countChar32(str, pos)));
     } else {
         Tcl_SetObjResult(interp, Tcl_NewIntObj(-1));
     }
@@ -800,8 +835,12 @@ proc icu::test {} {
     if {$::tcl_version >= 8.7} {
         set thugs {"𝖙𝖍𝖚𝖌 𝖑𝖎𝖋𝖊" "𝓽𝓱𝓾𝓰 𝓵𝓲𝓯𝓮" "𝓉𝒽𝓊𝑔 𝓁𝒾𝒻𝑒" "𝕥𝕙𝕦𝕘 𝕝𝕚𝕗𝕖"
             "ｔｈｕｇ ｌｉｆｅ"}
+        set lif0 "𝖑𝖎𝖋"
+        puts "Location of $lif0: [icu::string first $lif0 [lindex $thugs 0]]"
     }
     lappend thugs "ｔｈｕｇ ｌｉｆｅ"
+    set lif1 "ｌｉｆ"
+    puts "Location of $lif1: [icu::string last $lif1 [lindex $thugs end]]"
     foreach thug $thugs {
         puts "string length {$thug} -> [::string length $thug]"
         puts "icu::string length {$thug} -> [icu::string length $thug]"
