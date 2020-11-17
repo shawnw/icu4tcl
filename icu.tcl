@@ -62,9 +62,10 @@ critcl::cinit {
                    "Tcl_UniChar and UChar sizes differ");
     Tcl_CreateNamespace(ip, "icu", NULL, NULL);
     Tcl_CreateNamespace(ip, "icu::string", NULL, NULL);
-    Tcl_SetVar2Ex(ip, "icu::icu_version", NULL, Tcl_NewStringObj(U_ICU_VERSION, -1), 0);
-    Tcl_SetVar2Ex(ip, "icu::unicode_version", NULL, Tcl_NewStringObj(U_UNICODE_VERSION,
-                                                                     -1), 0);
+    Tcl_SetVar2Ex(ip, "icu::icu_version", NULL,
+                  Tcl_NewStringObj(U_ICU_VERSION, -1), 0);
+    Tcl_SetVar2Ex(ip, "icu::unicode_version", NULL,
+                  Tcl_NewStringObj(U_UNICODE_VERSION, -1), 0);
 } {}
 
 critcl::ccode {
@@ -83,7 +84,8 @@ critcl::ccommand icu::string::length {cdata interp objc objv} {
         Tcl_WrongNumArgs(interp, 1, objv, "string");
         return TCL_ERROR;
     }
-    Tcl_SetObjResult(interp, Tcl_NewIntObj(u_countChar32(Tcl_GetUnicode(objv[1]), -1)));
+    Tcl_SetObjResult(interp,
+                     Tcl_NewIntObj(u_countChar32(Tcl_GetUnicode(objv[1]), -1)));
     return TCL_OK;
 }
 
@@ -93,7 +95,8 @@ critcl::ccommand icu::string::compare {cdata interp objc objv} {
     _Bool nocase = 0;
 
     if (objc < 3 || objc > 5) {
-        Tcl_WrongNumArgs(interp, 1, objv, "?-nocase? ?-exclude-special-i? s1 s2");
+        Tcl_WrongNumArgs(interp, 1, objv,
+                         "?-nocase? ?-exclude-special-i? s1 s2");
         return TCL_ERROR;
     }
 
@@ -107,7 +110,8 @@ critcl::ccommand icu::string::compare {cdata interp objc objv} {
             Tcl_SetResult(interp, "unknown option", TCL_STATIC);
             return TCL_ERROR;
         } else {
-            Tcl_WrongNumArgs(interp, 1, objv, "?-nocase? ?-exclude-special-i? s1 s2");
+            Tcl_WrongNumArgs(interp, 1, objv,
+                             "?-nocase? ?-exclude-special-i? s1 s2");
             return TCL_ERROR;
         }
     }
@@ -131,7 +135,8 @@ critcl::ccommand icu::string::compare {cdata interp objc objv} {
 }
 
 
-# Return the index of the first codepoint in string that is included in characters.
+# Return the index of the first codepoint in string that is included
+# in characters.
 critcl::ccommand icu::string::first_of {cdata interp objc objv} {
     if (objc != 3) {
         Tcl_WrongNumArgs(interp, 1, objv, "string characters");
@@ -190,14 +195,16 @@ critcl::ccommand icu::string::foldcase {cdata interp objc objv} {
 
     dest_capacity = Tcl_GetCharLength(objv[idx]) + 1;
     dest = ckalloc(dest_capacity * sizeof(Tcl_UniChar));
-    uint32_t dest_len = u_strFoldCase(dest, dest_capacity, Tcl_GetUnicode(objv[idx]),
-                                      -1, options, &err);
+    uint32_t dest_len = u_strFoldCase(dest, dest_capacity,
+                                      Tcl_GetUnicode(objv[idx]), -1,
+                                      options, &err);
     if (err == U_BUFFER_OVERFLOW_ERROR || dest_len > dest_capacity) {
         dest_capacity = dest_len + 1;
         dest = ckrealloc(dest, dest_capacity * sizeof(Tcl_UniChar));
         err = U_ZERO_ERROR;
-        dest_len = u_strFoldCase(dest, dest_capacity, Tcl_GetUnicode(objv[idx]),
-                                 -1, options, &err);
+        dest_len = u_strFoldCase(dest, dest_capacity,
+                                 Tcl_GetUnicode(objv[idx]), -1,
+                                 options, &err);
     }
 
     if (U_FAILURE(err)) {
@@ -240,14 +247,16 @@ critcl::ccommand icu::string::toupper {cdata interp objc objv} {
     dest_capacity = Tcl_GetCharLength(objv[idx]) + 1;
     dest = ckalloc(dest_capacity * sizeof(Tcl_UniChar));
 
-    uint32_t dest_len = u_strToUpper(dest, dest_capacity, Tcl_GetUnicode(objv[idx]),
-                                     -1, loc, &err);
+    uint32_t dest_len = u_strToUpper(dest, dest_capacity,
+                                     Tcl_GetUnicode(objv[idx]), -1,
+                                     loc, &err);
     if (err == U_BUFFER_OVERFLOW_ERROR || dest_len > dest_capacity) {
         dest_capacity = dest_len + 1;
         dest = ckrealloc(dest, dest_capacity * sizeof(Tcl_UniChar));
         err = U_ZERO_ERROR;
-        dest_len = u_strToUpper(dest, dest_capacity, Tcl_GetUnicode(objv[idx]),
-                                 -1, loc, &err);
+        dest_len = u_strToUpper(dest, dest_capacity,
+                                Tcl_GetUnicode(objv[idx]), -1,
+                                loc, &err);
     }
 
     if (U_FAILURE(err)) {
@@ -290,14 +299,16 @@ critcl::ccommand icu::string::tolower {cdata interp objc objv} {
     dest_capacity = Tcl_GetCharLength(objv[idx]) + 1;
     dest = ckalloc(dest_capacity * sizeof(Tcl_UniChar));
 
-    uint32_t dest_len = u_strToLower(dest, dest_capacity, Tcl_GetUnicode(objv[idx]),
-                                     -1, loc, &err);
+    uint32_t dest_len = u_strToLower(dest, dest_capacity,
+                                     Tcl_GetUnicode(objv[idx]), -1,
+                                     loc, &err);
     if (err == U_BUFFER_OVERFLOW_ERROR || dest_len > dest_capacity) {
         dest_capacity = dest_len + 1;
         dest = ckrealloc(dest, dest_capacity * sizeof(Tcl_UniChar));
         err = U_ZERO_ERROR;
-        dest_len = u_strToLower(dest, dest_capacity, Tcl_GetUnicode(objv[idx]),
-                                 -1, loc, &err);
+        dest_len = u_strToLower(dest, dest_capacity,
+                                Tcl_GetUnicode(objv[idx]), -1,
+                                loc, &err);
     }
 
     if (U_FAILURE(err)) {
@@ -340,14 +351,16 @@ critcl::ccommand icu::string::totitle {cdata interp objc objv} {
     dest_capacity = Tcl_GetCharLength(objv[idx]) + 1;
     dest = ckalloc(dest_capacity * sizeof(Tcl_UniChar));
 
-    uint32_t dest_len = u_strToTitle(dest, dest_capacity, Tcl_GetUnicode(objv[idx]),
-                                     -1, NULL, loc, &err);
+    uint32_t dest_len = u_strToTitle(dest, dest_capacity,
+                                     Tcl_GetUnicode(objv[idx]), -1,
+                                     NULL, loc, &err);
     if (err == U_BUFFER_OVERFLOW_ERROR || dest_len > dest_capacity) {
         dest_capacity = dest_len + 1;
         dest = ckrealloc(dest, dest_capacity * sizeof(Tcl_UniChar));
         err = U_ZERO_ERROR;
-        dest_len = u_strToTitle(dest, dest_capacity, Tcl_GetUnicode(objv[idx]),
-                                 -1, NULL, loc, &err);
+        dest_len = u_strToTitle(dest, dest_capacity,
+                                Tcl_GetUnicode(objv[idx]), -1,
+                                NULL, loc, &err);
     }
 
     if (U_FAILURE(err)) {
@@ -370,11 +383,13 @@ critcl::ccode {
                            Tcl_Obj * const objv[]) {
        if (objc == 2 && strcmp(Tcl_GetString(objv[1]), "-locale") == 0) {
           UErrorCode err = U_ZERO_ERROR;
-          const char *name = ucol_getLocaleByType((UCollator *)cd, ULOC_ACTUAL_LOCALE,
-                                                  &err);
+           const char *name = ucol_getLocaleByType((UCollator *)cd,
+                                                   ULOC_ACTUAL_LOCALE,
+                                                   &err);
           if (U_FAILURE(err)) {
-               set_icu_error_result(interp, "Unable to get collation locale", err);
-               return TCL_ERROR;
+              set_icu_error_result(interp, "Unable to get collation locale",
+                                   err);
+              return TCL_ERROR;
           }
           if (name) {
              Tcl_SetResult(interp, (char *)name, TCL_VOLATILE);
@@ -487,7 +502,8 @@ proc icu::test {} {
 }
 
 # If this is the main script...
-if {[info exists argv0] && ([file tail [info script]] eq [file tail $argv0])} {
+if {[info exists argv0] &&
+    ([file tail [info script]] eq [file tail $argv0])} {
     icu::test
 }
 

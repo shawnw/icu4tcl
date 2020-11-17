@@ -43,13 +43,13 @@ Ensemble with various string-related commands.
 
 Returns the number of codepoints in the string.
 
-#### icu::string compare ?-nocase? ?-exclude-special? s1 s2
+#### icu::string compare ?-nocase? ?-exclude-special-i? s1 s2
 
 Compares `s1` and `s2` in code point order, returning a number less
 than 0, 0 or greater than 0 if `s1` is less than, euqal to or greater
 than `s2`. `-nocase` does case-insensitive comparision, and
 `-exclude-special-i` special-cases the Turkish dotted I (U+0130) and
-dotless i U+131) characters (Only meaningful with `-nocase`).
+dotless i U+0131) characters (Only meaningful with `-nocase`).
 
 For locale-specific string comparision, see `icu::collator`.
 
