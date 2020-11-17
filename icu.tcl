@@ -12,6 +12,7 @@ critcl::clibraries {*}[exec icu-config --ldflags-libsonly]
 namespace eval icu {
     variable version 0.1
     variable icu_version {}
+    variable unicode_version {}
 
     namespace export {[a-z]*}
 }
@@ -31,6 +32,8 @@ critcl::cinit {
     Tcl_CreateNamespace(ip, "icu", NULL, NULL);
     Tcl_CreateNamespace(ip, "icu::string", NULL, NULL);
     Tcl_SetVar2Ex(ip, "icu::icu_version", NULL, Tcl_NewStringObj(U_ICU_VERSION, -1), 0);
+    Tcl_SetVar2Ex(ip, "icu::unicode_version", NULL, Tcl_NewStringObj(U_UNICODE_VERSION,
+                                                                     -1), 0);
 } {}
 
 critcl::ccode {
@@ -221,7 +224,7 @@ namespace eval icu::string {
 
 proc icu::test {} {
     critcl::load
-    puts "Using $icu::icu_version"
+    puts "Using $icu::icu_version and $icu::unicode_version"
     set pos [icu::string first_of food od]
     puts "pos $pos"
     set pos [icu::string first_of food xy]

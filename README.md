@@ -28,6 +28,10 @@ Package version.
 
 Version of ICU being used.
 
+### icu::unicode_version
+
+Version of Unicode being used.
+
 Commands
 --------
 
