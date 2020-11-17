@@ -141,6 +141,44 @@ critcl::ccommand icu::string::compare {cdata interp objc objv} {
         return TCL_OK;
 }
 
+critcl::ccommand icu::string::index {cdata interp objc objv} {
+    if (objc != 3) {
+        Tcl_WrongNumArgs(interp, 1, objv, "string charIndex");
+        return TCL_ERROR;
+    }
+
+    int32_t slen;
+    const Tcl_UniChar *s = Tcl_GetUnicodeFromObj(objv[1], &slen);
+    int skip, offset = 0;
+
+    if (Tcl_GetIntFromObj(interp, objv[2], &skip) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (skip < 0) {
+        Tcl_SetResult(interp, "charIndex cannot be negative", TCL_STATIC);
+        return TCL_ERROR;
+    }
+    U16_FWD_N(s, offset, slen, skip);
+    if (s[offset]) {
+        UChar32 c = 0;
+        Tcl_UniChar res[3] = { 0, 0, 0};
+        int reslen = -1;
+        U16_NEXT_OR_FFFD(s, offset, slen, c);
+        if (U16_LENGTH(c) == 1) {
+            res[0] = c;
+            reslen = 1;
+        } else {
+            res[0] = U16_LEAD(c);
+            res[1] = U16_TRAIL(c);
+            reslen = 2;
+        }
+        Tcl_SetObjResult(interp, Tcl_NewUnicodeObj(res, reslen));
+    } else {
+        Tcl_SetResult(interp, "", TCL_STATIC);
+    }
+    return TCL_OK;
+}
+
 critcl::ccommand icu::string::first {cdata interp objc objv} {
     if (objc != 3) {
         Tcl_WrongNumArgs(interp, 1, objv, "needleString haystackString");
@@ -817,6 +855,10 @@ proc icu::test {} {
     puts "pos $pos"
     set pos [icu::string first_of food xy]
     puts "pos $pos"
+    set c [icu::string index abc 1]
+    puts "c is >$c<"
+    set c [icu::string index food 6]
+    puts "c is >$c<"
 
     # Case changes
     set s "fOoBaR \u0130I\u0131i"
@@ -830,13 +872,14 @@ proc icu::test {} {
     puts "casefolded $s: [icu::string foldcase $s]"
     puts "casefolded excluded $s: [icu::string foldcase -exclude-special-i $s]"
 
-
     # Normalization
     if {$::tcl_version >= 8.7} {
         set thugs {"𝖙𝖍𝖚𝖌 𝖑𝖎𝖋𝖊" "𝓽𝓱𝓾𝓰 𝓵𝓲𝓯𝓮" "𝓉𝒽𝓊𝑔 𝓁𝒾𝒻𝑒" "𝕥𝕙𝕦𝕘 𝕝𝕚𝕗𝕖"
             "ｔｈｕｇ ｌｉｆｅ"}
         set lif0 "𝖑𝖎𝖋"
-        puts "Location of $lif0: [icu::string first $lif0 [lindex $thugs 0]]"
+        set pos [icu::string first $lif0 [lindex $thugs 0]]
+        puts "Location of $lif0: $pos"
+        puts "index: >[icu::string index [lindex $thugs 0] $pos]<"
     }
     lappend thugs "ｔｈｕｇ ｌｉｆｅ"
     set lif1 "ｌｉｆ"

@@ -37,7 +37,10 @@ Commands
 
 ### icu::string
 
-Ensemble with various string-related commands.
+Ensemble with various string-related commands. Unlike the ones in
+`::string`, these will handle UTF-16 strings with characters outside
+of the BMP correctly. However, due to that, most of them are also
+`O(N)` complexity.
 
 #### icu::string length s
 
@@ -52,6 +55,11 @@ than `s2`. `-nocase` does case-insensitive comparision, and
 dotless i U+0131) characters (Only meaningful with `-nocase`).
 
 For locale-specific string comparision, see `icu::collator`.
+
+#### icu::string index s i
+
+Return the character at the `i`th code point of `s`. If the string is
+not that long, returns an empty string.
 
 #### icu::string first needleString haystackString
 
