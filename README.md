@@ -103,3 +103,65 @@ Returns the name of the locale used by the collator command.
 
 Returns -1, 0 or 1 depending on if `s1` is less than, equal to, or
 greater than `s2` according to the collator's rules.
+
+### locale
+
+An ensemble with various locale-related commands.
+
+#### default ?locale?
+
+Return the default locale. With an argument, also sets the default to
+that.
+
+#### get
+
+Returns information about a given locale, or the default one if no
+locale is specified.
+
+##### get language ?locale?
+
+Return the language code for the locale.
+
+##### get script ?locale?
+
+Return the script used by the locale.
+
+##### get country ?locale?
+
+Return the locale's country code.
+
+##### get variant ?locale?
+
+Return the locale's variant code.
+
+##### get name ?locale?
+
+Return the full name of the locale.
+
+##### get canonname ?locale?
+
+Return the canonicalized full name of the locale.
+
+##### get rightoleft ?locale?
+
+Returns 1 if the locale's script is read right to left, otherwise 0.
+
+##### get character-orientation ?locale?
+
+Returns `left-to-right` or `right-to-left` or `unknown`.
+
+##### get line-orientation ?locale?
+
+Returns `top-to-bottom` or `bottom-to-top` or `unknown`.
+
+#### languages ?pattern?
+
+Returns a list of known ISO language codes.
+
+#### countries ?pattern?
+
+Returns a list of known ISO country codes.
+
+#### list ?pattern?
+
+Returns a list of known locales.

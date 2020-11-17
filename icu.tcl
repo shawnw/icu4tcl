@@ -52,6 +52,7 @@ critcl::ccode {
     #include <unicode/ustring.h>
     #include <unicode/ucol.h>
     #include <unicode/ubrk.h>
+    #include <unicode/uloc.h>
     #include <stdlib.h>
     #include <stdio.h>
     #include <string.h>
@@ -62,6 +63,7 @@ critcl::cinit {
                    "Tcl_UniChar and UChar sizes differ");
     Tcl_CreateNamespace(ip, "icu", NULL, NULL);
     Tcl_CreateNamespace(ip, "icu::string", NULL, NULL);
+    Tcl_CreateNamespace(ip, "icu::locale", NULL, NULL);
     Tcl_SetVar2Ex(ip, "icu::icu_version", NULL,
                   Tcl_NewStringObj(U_ICU_VERSION, -1), 0);
     Tcl_SetVar2Ex(ip, "icu::unicode_version", NULL,
@@ -460,14 +462,233 @@ critcl::ccommand icu::collator {cdata interp objc objv} {
     return TCL_OK;
 }
 
+critcl::ccommand icu::locale::default {cdata interp objc objv} {
+    if (objc > 2) {
+        Tcl_WrongNumArgs(interp, 1, objv, "?locale?");
+        return TCL_ERROR;
+    }
+
+    if (objc == 2) {
+        // Set default locale
+        UErrorCode err = U_ZERO_ERROR;
+        uloc_setDefault(Tcl_GetString(objv[1]), &err);
+        if (U_FAILURE(err)) {
+            set_icu_error_result(interp, "uloc_setDefault", err);
+            return TCL_ERROR;
+        }
+    }
+
+    Tcl_SetResult(interp, (char *)uloc_getDefault(), TCL_VOLATILE);
+    return TCL_OK;
+}
+
+critcl::ccommand icu::locale::get {cdata interp objc objv} {
+    if (objc == 1 || objc > 3) {
+        Tcl_WrongNumArgs(interp, 1, objv, "subcommand ?locale?");
+        return TCL_ERROR;
+    }
+
+    const char *loc;
+    if (objc == 3) {
+        loc = Tcl_GetString(objv[2]);
+    } else {
+        loc = uloc_getDefault();
+    }
+
+    const char *func = "";
+    char buffer[1024];
+    UErrorCode err = U_ZERO_ERROR;
+    uint32_t len = sizeof buffer;
+    const char *subcommand = Tcl_GetString(objv[1]);
+
+    if (strcmp(subcommand, "language") == 0) {
+        func = "uloc_getLanguage";
+        len = uloc_getLanguage(loc, buffer, len, &err);
+    } else if (strcmp(subcommand, "script") == 0) {
+        func = "uloc_getScript";
+        len = uloc_getScript(loc, buffer,len, &err);
+    } else if (strcmp(subcommand, "country") == 0) {
+        func = "uloc_getCountry";
+        len = uloc_getCountry(loc, buffer, len, &err);
+    } else if (strcmp(subcommand, "variant") == 0) {
+        func = "uloc_getVariant";
+        len = uloc_getVariant(loc, buffer, len, &err);
+    } else if (strcmp(subcommand, "name") == 0) {
+        func = "uloc_getName";
+        len = uloc_getName(loc, buffer, len, &err);
+    } else if (strcmp(subcommand, "canonname") == 0) {
+        func = "uloc_canonicalize";
+        len = uloc_canonicalize(loc, buffer, len, &err);
+    } else if (strcmp(subcommand, "righttoleft") == 0) {
+        if (uloc_isRightToLeft(loc)) {
+            buffer[0] = '1';
+        } else {
+            buffer[0] = '0';
+        }
+        len = 1;
+    } else if (strcmp(subcommand, "character-orientation") == 0 ||
+               strcmp(subcommand, "line-orientation") == 0) {
+        ULayoutType o;
+        UErrorCode err = U_ZERO_ERROR;
+        if (subcommand[0] == 'c') {
+            o = uloc_getCharacterOrientation(loc, &err);
+        } else {
+            o = uloc_getLineOrientation(loc, &err);
+        }
+        if (U_FAILURE(err)) {
+            set_icu_error_result(interp, subcommand[0] == 'c' ?
+                                 "uloc_getCharacterOrientation"
+                                 : "uloc_getLineOrientation", err);
+            return TCL_ERROR;
+        }
+        switch (o) {
+            case ULOC_LAYOUT_LTR:
+            strcpy(buffer, "left-to-right");
+            break;
+            case ULOC_LAYOUT_RTL:
+            strcpy(buffer, "right-to-left");
+            break;
+            case ULOC_LAYOUT_TTB:
+            strcpy(buffer, "top-to-bottom");
+            break;
+            case ULOC_LAYOUT_BTT:
+            strcpy(buffer, "bottom-to-top");
+            break;
+            default:
+            strcpy(buffer, "unknown");
+        }
+        len = strlen(buffer);
+    } else {
+        Tcl_SetResult(interp, "unknown icu::locale subcommand", TCL_STATIC);
+        return TCL_ERROR;
+    }
+    if (U_FAILURE(err)) {
+        set_icu_error_result(interp, func, err);
+        return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp, Tcl_NewStringObj(buffer, len));
+    return TCL_OK;
+}
+
+critcl::ccommand icu::locale::languages {cdata interp objc objv} {
+    if (objc > 2) {
+        Tcl_WrongNumArgs(interp, 1, objv, "?pattern?");
+        return TCL_ERROR;
+    }
+
+    const char *pattern = NULL;
+    if (objc == 2) {
+        pattern = Tcl_GetString(objv[1]);
+    }
+
+    Tcl_Obj *langs = Tcl_NewListObj(0, NULL);
+    const char * const *raw = uloc_getISOLanguages();
+    if (raw) {
+        for (int i = 0; raw[i]; i += 1) {
+           if (pattern && !Tcl_StringMatch(raw[i], pattern)) { continue; }
+           Tcl_ListObjAppendElement(interp, langs,
+                                    Tcl_NewStringObj(raw[i], strlen(raw[i])));
+       }
+    }
+    Tcl_SetObjResult(interp, langs);
+    return TCL_OK;
+}
+
+critcl::ccommand icu::locale::countries {cdata interp objc objv} {
+    if (objc > 2) {
+        Tcl_WrongNumArgs(interp, 1, objv, "?pattern?");
+        return TCL_ERROR;
+    }
+
+    const char *pattern = NULL;
+    if (objc == 2) {
+        pattern = Tcl_GetString(objv[1]);
+    }
+
+    Tcl_Obj *countries = Tcl_NewListObj(0, NULL);
+    const char * const *raw = uloc_getISOCountries();
+    if (raw) {
+        for (int i = 0; raw[i]; i += 1) {
+           if (pattern && !Tcl_StringMatch(raw[i], pattern)) { continue; }
+           Tcl_ListObjAppendElement(interp, countries,
+                                    Tcl_NewStringObj(raw[i], strlen(raw[i])));
+       }
+    }
+    Tcl_SetObjResult(interp, countries);
+    return TCL_OK;
+}
+
+critcl::ccommand icu::locale::list {cdata interp objc objv} {
+        if (objc > 2) {
+        Tcl_WrongNumArgs(interp, 1, objv, "?pattern?");
+        return TCL_ERROR;
+    }
+
+    const char *pattern = NULL;
+    if (objc == 2) {
+        pattern = Tcl_GetString(objv[1]);
+    }
+
+    #if U_ICU_VERSION_MAJOR_NUM >= 65
+    UErrorCode err = U_ZERO_ERROR;
+    UEnumeration *raw = uloc_openAvailableByType(ULOC_AVAILABLE_DEFAULT, &err);
+    if (U_FAILURE(err)) {
+        set_icu_error_result(interp, "uloc_openAvailableByType", err);
+        return TCL_ERROR;
+    }
+    Tcl_Obj *locales = Tcl_NewListObj(0, NULL);
+    const char *loc;
+    uint32_t len;
+    while ((loc = uenum_next(raw, &len, &err))) {
+        if (U_FAILURE(err)) {
+            icu_set_result_error(interp, "uenum_next", err);
+            Tcl_DecrRefCount(locales);
+            return TCL_ERROR;
+        }
+        if (pattern && !Tcl_StringMatch(loc, pattern)) { continue; }
+        Tcl_ListObjAppendElement(interp, locales, Tcl_NewStringObj(loc, len));
+    }
+    uenum_close(raw);
+    #else
+    uint32_t nlocales = uloc_countAvailable();
+    Tcl_Obj *locales = Tcl_NewListObj(0, NULL);
+    for (int i = 0; i < nlocales; i += 1) {
+         const char *loc = uloc_getAvailable(i);
+         if (!loc) { continue; }
+         if (pattern && !Tcl_StringMatch(loc, pattern)) { continue; }
+         Tcl_ListObjAppendElement(interp, locales,
+                                  Tcl_NewStringObj(loc, -1));
+     }
+    #endif
+    Tcl_SetObjResult(interp, locales);
+    return TCL_OK;
+}
+
 namespace eval icu::string {
-    namespace export {[a-zA-Z]*}
+    namespace export {[a-z]*}
+    namespace ensemble create
+}
+
+namespace eval icu::locale {
+    namespace export {[a-z]*}
     namespace ensemble create
 }
 
 proc icu::test {} {
     critcl::load
-    puts "Using $icu::icu_version and $icu::unicode_version"
+    puts "Using ICU $icu::icu_version and Unicode $icu::unicode_version"
+
+    # Locales.
+    puts "Default locale is [icu::locale get name [icu::locale default]] ([icu::locale get canonname])"
+    puts "Language: [icu::locale get language] Script: [icu::locale get script]"
+    puts "Variant: [icu::locale get variant] Country: [icu::locale get country]"
+    puts "Read [icu::locale get character-orientation] and [icu::locale get line-orientation]"
+
+    puts "Known languages: {[icu::locale languages]}"
+    puts "Known countries: {[icu::locale countries]}"
+    puts "Known locales: {[icu::locale list]}"
+
+    # String searching
     set pos [icu::string first_of food od]
     puts "pos $pos"
     set pos [icu::string first_of food xy]
@@ -484,7 +705,6 @@ proc icu::test {} {
     puts "titlecase $s: [icu::string totitle $s]"
     puts "casefolded $s: [icu::string foldcase $s]"
     puts "casefolded excluded $s: [icu::string foldcase -exclude-special-i $s]"
-
 
     # Comparision
     puts "compare -nocase {$s} {$uc_s}: [icu::string compare -nocase $s $uc_s]"
