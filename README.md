@@ -43,6 +43,16 @@ Ensemble with various string-related commands.
 
 Returns the number of codepoints in the string.
 
+#### icu::string compare ?-nocase? ?-exclude-special? s1 s2
+
+Compares `s1` and `s2` in code point order, returning a number less
+than 0, 0 or greater than 0 if `s1` is less than, euqal to or greater
+than `s2`. `-nocase` does case-insensitive comparision, and
+`-exclude-special-i` special-cases the Turkish dotted I (U+0130) and
+dotless i U+131) characters (Only meaningful with `-nocase`).
+
+For locale-specific string comparision, see `icu::collator`.
+
 #### icu::string first_of s chars
 
 Returns the index of the first character in `s` that is also in
@@ -61,19 +71,19 @@ locale. If not present, uses the default one.
 
 #### icu::string tolower ?-locale locale? s
 
-Returns an lower-cased version of `s`, according to the optional
+Returns a lower-cased version of `s`, according to the optional
 `locale` rules. If the locale is an empty string, uses the root
 locale. If not present, uses the default one.
 
 #### icu::string totitle ?-locale locale? s
 
-Returns an title-cased version of `s`, according to the optional
+Returns a title-cased version of `s`, according to the optional
 `locale` rules. If the locale is an empty string, uses the root
 locale. If not present, uses the default one.
 
-#### icu::string foldcase ?-exclude-special? s
+#### icu::string foldcase ?-exclude-special-i? s
 
-Returns a case-folded version of `s`. If `-exclude-special`is given,
+Returns a case-folded version of `s`. If `-exclude-special-i`is given,
 excludes mappings for the Turkish dotted I (U+0130) and dotless i
 (U+0131), etc.
 

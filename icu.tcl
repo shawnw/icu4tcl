@@ -87,6 +87,50 @@ critcl::ccommand icu::string::length {cdata interp objc objv} {
     return TCL_OK;
 }
 
+critcl::ccommand icu::string::compare {cdata interp objc objv} {
+    int idx = 1;
+    int options = U_COMPARE_CODE_POINT_ORDER;
+    _Bool nocase = 0;
+
+    if (objc < 3 || objc > 5) {
+        Tcl_WrongNumArgs(interp, 1, objv, "?-nocase? ?-exclude-special-i? s1 s2");
+        return TCL_ERROR;
+    }
+
+    while (idx < objc - 2) {
+        const char *opt = Tcl_GetString(objv[idx++]);
+        if (strcmp(opt, "-nocase") == 0) {
+            nocase = 1;
+        } else if (strcmp(opt, "-exclude-special-i") == 0) {
+            options |= U_FOLD_CASE_EXCLUDE_SPECIAL_I;
+        } else if (opt[0] == '-') {
+            Tcl_SetResult(interp, "unknown option", TCL_STATIC);
+            return TCL_ERROR;
+        } else {
+            Tcl_WrongNumArgs(interp, 1, objv, "?-nocase? ?-exclude-special-i? s1 s2");
+            return TCL_ERROR;
+        }
+    }
+
+    uint32_t res;
+    if (nocase) {
+        UErrorCode err = U_ZERO_ERROR;
+        res = u_strCaseCompare(Tcl_GetUnicode(objv[idx]), -1,
+                               Tcl_GetUnicode(objv[idx+1]), -1,
+                               options, &err);
+        if (U_FAILURE(err)) {
+            set_icu_error_result(interp, "u_strCaseCompare", err);
+            return TCL_ERROR;
+        }
+    } else {
+        res = u_strcmpCodePointOrder(Tcl_GetUnicode(objv[idx]),
+                                     Tcl_GetUnicode(objv[idx+1]));
+    }
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(res));
+        return TCL_OK;
+}
+
+
 # Return the index of the first codepoint in string that is included in characters.
 critcl::ccommand icu::string::first_of {cdata interp objc objv} {
     if (objc != 3) {
@@ -126,20 +170,20 @@ critcl::ccommand icu::string::foldcase {cdata interp objc objv} {
     int idx = 1;
 
     if (objc == 1 || objc > 3) {
-        Tcl_WrongNumArgs(interp, 1, objv, "?-exclude-special? string");
+        Tcl_WrongNumArgs(interp, 1, objv, "?-exclude-special-i? string");
         return TCL_ERROR;
     }
 
     if (objc == 3) {
         const char *arg = Tcl_GetString(objv[1]);
         idx = 2;
-        if (strcmp(arg, "-exclude-special") == 0) {
+        if (strcmp(arg, "-exclude-special-i") == 0) {
             options = U_FOLD_CASE_EXCLUDE_SPECIAL_I;
         } else if (arg[0] == '-') {
             Tcl_SetResult(interp, "Unknown option", TCL_STATIC);
             return TCL_ERROR;
         } else {
-            Tcl_WrongNumArgs(interp, 1, objv, "?-exclude-special? string");
+            Tcl_WrongNumArgs(interp, 1, objv, "?-exclude-special-i? string");
             return TCL_ERROR;
         }
     }
@@ -413,21 +457,33 @@ proc icu::test {} {
     puts "pos $pos"
     set pos [icu::string first_of food xy]
     puts "pos $pos"
-    set coll [icu::collator en_US]
-    puts "coll name $coll"
-    puts "compare foo bar: [$coll foo bar]"
-    puts "collator locale: [$coll -locale]"
-    rename $coll ""
-    icu::collator myColl en_US
-    puts "compare bar foo: [myColl bar foo]"
+
+    # Case changes
     set s "fOoBaR \u0130I\u0131i"
-    puts "uppercase $s: [icu::string toupper $s]"
-    puts "lowercase $s: [icu::string tolower $s]"
+    set uc_s [icu::string toupper $s]
+    set lc_s [icu::string tolower $s]
+    puts "uppercase $s: $uc_s"
+    puts "lowercase $s: $lc_s"
     puts "turkish uppercase $s: [icu::string toupper -locale tr_TR $s]"
     puts "turkish lowercase $s: [icu::string tolower -locale tr_TR $s]"
     puts "titlecase $s: [icu::string totitle $s]"
     puts "casefolded $s: [icu::string foldcase $s]"
-    puts "casefolded excluded $s: [icu::string foldcase -exclude-special $s]"
+    puts "casefolded excluded $s: [icu::string foldcase -exclude-special-i $s]"
+
+
+    # Comparision
+    puts "compare -nocase {$s} {$uc_s}: [icu::string compare -nocase $s $uc_s]"
+    puts "compare -nocase -exclude-special-i {$s} {$uc_s}: [icu::string compare -exclude-special-i -nocase $s $uc_s]"
+    puts "compare {$s} {$lc_s}: [icu::string compare $s $lc_s]"
+
+    # collators
+    set coll [icu::collator tr_TR]
+    puts "coll name $coll and locale [$coll -locale]"
+    puts "compare {$s} {$uc_s}: [$coll $s $uc_s]"
+    rename $coll ""
+    icu::collator myColl en_US
+    puts "compare {$s} {$uc_s}: [myColl $s $uc_s]"
+
 }
 
 # If this is the main script...
