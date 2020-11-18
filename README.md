@@ -222,6 +222,25 @@ Is every codepoint in the string titlecased?
 
 Is every codepoint in the string a base character?
 
+#### icu::string break subcommand ?-locale locale? s
+
+Returns a list of components of the string, broken up according to
+the `subcommand` and optional locale.
+
+Subcommands are:
+
+##### characters
+
+Split up into individual extended grapheme clusters.
+
+##### words
+
+Split up into individual words.
+
+##### sentences
+
+Split up into sentences.
+
 ### icu::collator ?name? ?locale?
 
 Creates and returns the name of a new command that collates

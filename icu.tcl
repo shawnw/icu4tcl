@@ -52,6 +52,8 @@ namespace eval icu {
 critcl::ccode {
     #include <unicode/uversion.h>
     #include <unicode/ustring.h>
+    #include <unicode/uchar.h>
+    #include <unicode/uscript.h>
     #include <unicode/ucol.h>
     #include <unicode/ubrk.h>
     #include <unicode/uloc.h>
@@ -829,6 +831,74 @@ critcl::ccommand icu::string::is {cdata interp objc objv} {
     return TCL_OK;
 }
 
+critcl::ccommand icu::string::break {cdata interp objc objv} {
+    if (!(objc == 3 || objc == 5)) {
+        Tcl_WrongNumArgs(interp, 1, objv, "subcommand ?-locale locale? string");
+        return TCL_ERROR;
+    }
+
+    const char *loc = NULL;
+    int idx = 2;
+    UBreakIteratorType type = UBRK_CHARACTER;
+
+    const char *subcommand = Tcl_GetString(objv[1]);
+    if (strcmp(subcommand, "characters") == 0) {
+        type = UBRK_CHARACTER;
+    } else if (strcmp(subcommand, "words") == 0) {
+        type = UBRK_WORD;
+    } else if (strcmp(subcommand, "sentences") == 0) {
+        type = UBRK_SENTENCE;
+    } else {
+        Tcl_SetResult(interp, "Uknown subcommand", TCL_STATIC);
+        return TCL_ERROR;
+    }
+
+    if (objc == 5) {
+        const char *opt = Tcl_GetString(objv[2]);
+        if (strcmp(opt, "-locale") == 0) {
+            loc = Tcl_GetString(objv[3]);
+            idx = 4;
+        } else if (opt[0] == '-') {
+            Tcl_SetResult(interp, "Uknown option", TCL_STATIC);
+            return TCL_ERROR;
+        } else {
+            Tcl_WrongNumArgs(interp, 1, objv, "subcommand ?-locale locale? string");
+            return TCL_ERROR;
+        }
+    }
+
+    int32_t len;
+    const Tcl_UniChar *s = Tcl_GetUnicodeFromObj(objv[idx], &len);
+    UErrorCode err = U_ZERO_ERROR;
+    UBreakIterator *i = ubrk_open(type, loc, s, len, &err);
+    if (U_FAILURE(err)) {
+        set_icu_error_result(interp, "ubrk_open", err);
+        return TCL_ERROR;
+    }
+
+    Tcl_Obj *res = Tcl_NewListObj(0, NULL);
+    uint32_t start_pos = 0, end_pos;
+    while ((end_pos = ubrk_next(i)) != UBRK_DONE) {
+        UChar32 c;
+        U16_GET_OR_FFFD(s, 0, start_pos, len, c);
+        if (type == UBRK_WORD && u_isspace(c)) {
+            start_pos = end_pos;
+            continue;
+        }
+        if (Tcl_ListObjAppendElement(interp, res,
+                                     Tcl_NewUnicodeObj(s + start_pos,
+                                                       end_pos - start_pos)) != TCL_OK) {
+            Tcl_DecrRefCount(res);
+            ubrk_close(i);
+            return TCL_ERROR;
+        }
+        start_pos = end_pos;
+    }
+    ubrk_close(i);
+    Tcl_SetObjResult(interp, res);
+    return TCL_OK;
+}
+
 critcl::ccode {
     static void free_collator(ClientData cd) {
         ucol_close((UCollator *)cd);
@@ -1039,8 +1109,11 @@ critcl::ccommand icu::locale::languages {cdata interp objc objv} {
     if (raw) {
         for (int i = 0; raw[i]; i += 1) {
            if (pattern && !Tcl_StringMatch(raw[i], pattern)) { continue; }
-           Tcl_ListObjAppendElement(interp, langs,
-                                    Tcl_NewStringObj(raw[i], strlen(raw[i])));
+           if (Tcl_ListObjAppendElement(interp, langs,
+                                        Tcl_NewStringObj(raw[i], strlen(raw[i]))) != TCL_OK) {
+               Tcl_DecrRefCount(langs);
+               return TCL_ERROR;
+           }
        }
     }
     Tcl_SetObjResult(interp, langs);
@@ -1063,8 +1136,11 @@ critcl::ccommand icu::locale::countries {cdata interp objc objv} {
     if (raw) {
         for (int i = 0; raw[i]; i += 1) {
            if (pattern && !Tcl_StringMatch(raw[i], pattern)) { continue; }
-           Tcl_ListObjAppendElement(interp, countries,
-                                    Tcl_NewStringObj(raw[i], strlen(raw[i])));
+           if (Tcl_ListObjAppendElement(interp, countries,
+                                        Tcl_NewStringObj(raw[i], strlen(raw[i]))) != TCL_OK) {
+               Tcl_DecrRefCount(countries);
+               return TCL_ERROR;
+           }
        }
     }
     Tcl_SetObjResult(interp, countries);
@@ -1099,7 +1175,10 @@ critcl::ccommand icu::locale::list {cdata interp objc objv} {
             return TCL_ERROR;
         }
         if (pattern && !Tcl_StringMatch(loc, pattern)) { continue; }
-        Tcl_ListObjAppendElement(interp, locales, Tcl_NewStringObj(loc, len));
+        if (Tcl_ListObjAppendElement(interp, locales, Tcl_NewStringObj(loc, len)) != TCL_OK) {
+            Tcl_DecrRefCount(locales);
+            return TCL_ERROR;
+        }
     }
     uenum_close(raw);
     #else
@@ -1109,8 +1188,11 @@ critcl::ccommand icu::locale::list {cdata interp objc objv} {
          const char *loc = uloc_getAvailable(i);
          if (!loc) { continue; }
          if (pattern && !Tcl_StringMatch(loc, pattern)) { continue; }
-         Tcl_ListObjAppendElement(interp, locales,
-                                  Tcl_NewStringObj(loc, -1));
+         if (Tcl_ListObjAppendElement(interp, locales,
+                                      Tcl_NewStringObj(loc, -1)) != TCL_OK) {
+             Tcl_DecrRefCount(locales);
+             return TCL_ERROR;
+         }
      }
     #endif
     Tcl_SetObjResult(interp, locales);
@@ -1357,6 +1439,22 @@ proc icu::test {} {
     puts "char name $acp: $name"
     puts "char lookup {$name}: [icu::char lookup $name]"
     puts "char script $acp: [icu::char script $acp]"
+
+    # Breaks
+    set s "Fee fie foe fum."
+    foreach word [icu::string break words $s] {
+        puts "{$word}"
+    }
+
+    set s "foe\u0301 man"
+    foreach char [icu::string break characters $s] {
+        puts "{$char}"
+    }
+
+    set s "This is a sentence. And this is another. Finally a third."
+    foreach sent [icu::string break sentences $s] {
+        puts "{$sent}"
+    }
 }
 
 # If this is the main script...
