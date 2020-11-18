@@ -191,6 +191,38 @@ critcl::ccommand icu::string::index {cdata interp objc objv} {
     return TCL_OK;
 }
 
+critcl::ccommand icu::string::range {cdata interp objc objv} {
+    if (objc != 4) {
+        Tcl_WrongNumArgs(interp, 1, objv, "string first last");
+        return TCL_ERROR;
+    }
+
+    int start_cp, end_cp;
+
+    if (Tcl_GetIntFromObj(interp, objv[2], &start_cp) != TCL_OK ||
+        Tcl_GetIntFromObj(interp, objv[3], &end_cp) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (start_cp > end_cp) {
+        Tcl_SetResult(interp, "first must be <= last", TCL_STATIC);
+        return TCL_ERROR;
+    }
+
+    int32_t offset = 0, start_offset, end_offset,
+            sublen = end_cp - start_cp + 1;
+    int len;
+    const Tcl_UniChar *s = Tcl_GetUnicodeFromObj(objv[1], &len);
+    U16_FWD_N(s, offset, len, start_cp);
+    start_offset = offset;
+    U16_FWD_N(s, offset, len, sublen);
+    end_offset = offset;
+    Tcl_SetObjResult(interp,
+                     Tcl_NewUnicodeObj(s + start_offset,
+                                       end_offset - start_offset));
+    return TCL_OK;
+}
+
+
 critcl::ccommand icu::string::first {cdata interp objc objv} {
     if (objc != 3) {
         Tcl_WrongNumArgs(interp, 1, objv, "needleString haystackString");
@@ -1001,6 +1033,11 @@ proc icu::test {} {
     puts "c is >$c<"
     set c [icu::string index food 6]
     puts "c is >$c<"
+
+    set s "rutabega"
+    puts "range $s 0 3: [icu::string range $s 0 3]"
+    puts "range $s 3 3: [icu::string range $s 3 3]"
+    puts "range $s 7 20: [icu::string range $s 7 20]"
 
     # Case changes
     set s "fOoBaR \u0130I\u0131i"

@@ -42,6 +42,11 @@ Ensemble with various string-related commands. Unlike the ones in
 of the BMP correctly. However, due to that, most of them are also
 `O(N)` complexity.
 
+Anything that refers to indexes uses *codepoint* index, not *code
+unit* index like the core `string` functions. These are the same for
+characters in the BMP, but not for ones outside of it. Don't mix and
+match between the two ensembles.
+
 #### icu::string length s
 
 Returns the number of codepoints in the string.
@@ -70,15 +75,21 @@ as for `compare`.
 Return the character at the `i`th code point of `s`. If the string is
 not that long, returns an empty string.
 
+#### icu::string range s first last
+
+Returns the substring of `s` starting with index `first` and ending
+with index `last`. If `first` and `last` are the same, it's equivalent
+to `index`.
+
 #### icu::string first needleString haystackString
 
 Returns the index of the first occurence of `needleString` in
-`haystackString`, or -` if not found.
+`haystackString`, or -1 if not found.
 
 #### icu::string last needleString haystackString
 
 Returns the index of the last occurence of `needleString` in
-`haystackString`, or -` if not found.
+`haystackString`, or -1 if not found.
 
 #### icu::string first_of s chars
 
