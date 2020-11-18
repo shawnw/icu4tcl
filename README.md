@@ -40,7 +40,7 @@ Commands
 ### icu::char
 
 Ensemble with various character related commands. Unless otherwise
-specified, arguments are numeric codepoints; commands that take a
+specified, arguments are numeric codepoints; (**TODO**) commands that take a
 `-char` option look at the first codepoint of the argument when given
 instead of treating it like an integer.
 
@@ -53,6 +53,15 @@ Returns the codepoint for the given character.
 #### icu::char tochar cp
 
 Returns the character corresponding to the given codepoint.
+
+#### icu::char name cp
+
+Returns the name of the codepoint.
+
+#### icu::char lookup name
+
+Returns the codepoint corresponding to the given name, or -1 on
+unknown names.
 
 ### icu::string
 

@@ -100,7 +100,7 @@ critcl::ccommand icu::char::value {cdata interp objc objv} {
 
 critcl::ccommand icu::char::tochar {cdata interp objc objv} {
     if (objc != 2) {
-        Tcl_WrongNumArgs(interp, 1, objv, "character");
+        Tcl_WrongNumArgs(interp, 1, objv, "codepoint");
         return TCL_ERROR;
     }
 
@@ -110,7 +110,7 @@ critcl::ccommand icu::char::tochar {cdata interp objc objv} {
     }
 
     if (c < UCHAR_MIN_VALUE || c > UCHAR_MAX_VALUE) {
-        Tcl_SetResult(interp, "value out of range", TCL_STATIC);
+        Tcl_SetResult(interp, "codepoint out of range", TCL_STATIC);
         return TCL_ERROR;
     }
 
@@ -126,6 +126,54 @@ critcl::ccommand icu::char::tochar {cdata interp objc objv} {
     }
     Tcl_SetObjResult(interp, Tcl_NewUnicodeObj(res, reslen));
     return TCL_OK;
+}
+
+critcl::ccommand icu::char::name {cdata interp objc objv} {
+    if (objc != 2) {
+        Tcl_WrongNumArgs(interp, 1, objv, "character");
+        return TCL_ERROR;
+    }
+
+    UChar32 c;
+    if (Tcl_GetIntFromObj(interp, objv[1], &c) != TCL_OK) {
+        return TCL_ERROR;
+    }
+
+    if (c < UCHAR_MIN_VALUE || c > UCHAR_MAX_VALUE) {
+        Tcl_SetResult(interp, "codepoint out of range", TCL_STATIC);
+        return TCL_ERROR;
+    }
+
+    char name[256];
+    UErrorCode err = U_ZERO_ERROR;
+    int32_t len = u_charName(c, U_UNICODE_CHAR_NAME, name, sizeof name, &err);
+    if (U_FAILURE(err) || len > sizeof name) {
+        set_icu_error_result(interp, "u_charName", err);
+        return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp, Tcl_NewStringObj(name, len));
+    return TCL_OK;
+}
+
+critcl::ccommand icu::char::lookup {cdata interp objc objv} {
+    if (objc != 2) {
+        Tcl_WrongNumArgs(interp, 1, objv, "name");
+        return TCL_ERROR;
+    }
+
+    UErrorCode err = U_ZERO_ERROR;
+    UChar32 c = u_charFromName(U_UNICODE_CHAR_NAME, Tcl_GetString(objv[1]),
+                               &err);
+    if (err == U_INVALID_CHAR_FOUND) {
+        Tcl_SetObjResult(interp, Tcl_NewIntObj(-1));
+        return TCL_OK;
+    } else if (U_FAILURE(err)) {
+        set_icu_error_result(interp, "u_charFromName", err);
+        return TCL_ERROR;
+    } else {
+        Tcl_SetObjResult(interp, Tcl_NewIntObj(c));
+        return TCL_OK;
+    }
 }
 
 # Return the number of codepoints in a string. Differs from 8.X [string
@@ -1274,6 +1322,9 @@ proc icu::test {} {
     set acp [icu::char value A]
     puts "char value A: $acp"
     puts "char tochar $acp: [icu::char tochar $acp]"
+    set name [icu::char name $acp]
+    puts "char name $acp: $name"
+    puts "char lookup {$name}: [icu::char lookup $name]"
 }
 
 # If this is the main script...
