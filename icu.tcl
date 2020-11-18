@@ -176,6 +176,37 @@ critcl::ccommand icu::char::lookup {cdata interp objc objv} {
     }
 }
 
+critcl::ccommand icu::char::script {cdata interp objc objv} {
+    if (objc != 2) {
+        Tcl_WrongNumArgs(interp, 1, objv, "character");
+        return TCL_ERROR;
+    }
+
+    UChar32 c;
+    if (Tcl_GetIntFromObj(interp, objv[1], &c) != TCL_OK) {
+        return TCL_ERROR;
+    }
+
+    if (c < UCHAR_MIN_VALUE || c > UCHAR_MAX_VALUE) {
+        Tcl_SetResult(interp, "codepoint out of range", TCL_STATIC);
+        return TCL_ERROR;
+    }
+
+    char name[256];
+    UErrorCode err = U_ZERO_ERROR;
+    UScriptCode script = uscript_getScript(c, &err);
+    if (script == 0) {
+        Tcl_SetResult(interp, "invalid codepoint", TCL_STATIC);
+        return TCL_ERROR;
+    } else if (U_FAILURE(err)) {
+        set_icu_error_result(interp, "uscript_getScript", err);
+        return TCL_ERROR;
+    } else {
+        Tcl_SetResult(interp, (char *)uscript_getName(script), TCL_VOLATILE);
+        return TCL_OK;
+    }
+}
+
 # Return the number of codepoints in a string. Differs from 8.X [string
 # length] for surrogate pairs.
 critcl::ccommand icu::string::length {cdata interp objc objv} {
@@ -1325,6 +1356,7 @@ proc icu::test {} {
     set name [icu::char name $acp]
     puts "char name $acp: $name"
     puts "char lookup {$name}: [icu::char lookup $name]"
+    puts "char script $acp: [icu::char script $acp]"
 }
 
 # If this is the main script...

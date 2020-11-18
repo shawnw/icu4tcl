@@ -63,6 +63,10 @@ Returns the name of the codepoint.
 Returns the codepoint corresponding to the given name, or -1 on
 unknown names.
 
+#### icu::char script cp
+
+Returns the script the given codepoint belongs to.
+
 ### icu::string
 
 Ensemble with various string-related commands. Unlike the ones in
