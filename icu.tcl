@@ -56,6 +56,7 @@ critcl::ccode {
     #include <unicode/ubrk.h>
     #include <unicode/uloc.h>
     #include <unicode/unorm2.h>
+    #include <unicode/ulistformatter.h>
     #include <stdlib.h>
     #include <stdio.h>
     #include <string.h>
@@ -67,6 +68,7 @@ critcl::cinit {
     Tcl_CreateNamespace(ip, "icu", NULL, NULL);
     Tcl_CreateNamespace(ip, "icu::string", NULL, NULL);
     Tcl_CreateNamespace(ip, "icu::locale", NULL, NULL);
+    Tcl_CreateNamespace(ip, "icu::format", NULL, NULL);
     Tcl_SetVar2Ex(ip, "icu::icu_version", NULL,
                   Tcl_NewStringObj(U_ICU_VERSION, -1), 0);
     Tcl_SetVar2Ex(ip, "icu::unicode_version", NULL,
@@ -992,6 +994,128 @@ critcl::ccommand icu::locale::list {cdata interp objc objv} {
     return TCL_OK;
 }
 
+critcl::ccommand icu::format::list {cdata interp objc objv} {
+    UErrorCode err = U_ZERO_ERROR;
+    const char *loc = NULL;
+    #if U_ICU_VERSION_MAJOR_NUM >= 67
+    UListFormatterType type = ULISTFMT_TYPE_AND;
+    UListFormatterWidth width = ULISTFMT_WIDTH_WIDE;
+    #endif
+    if (objc == 1 || objc > 8) {
+        Tcl_WrongNumArgs(interp, 1, objv,
+                         "?-locale locale? ?-type and|or|units? ?-width wide|short|narrow? lst");
+        return TCL_ERROR;
+    }
+    int i;
+    for (i = 1; i < objc - 1; i += 2)
+    {
+     const char *opt = Tcl_GetString(objv[i]);
+     if (strcmp(opt, "-locale") == 0) {
+         loc = Tcl_GetString(objv[i+1]);
+     } else if (strcmp(opt, "-type") == 0) {
+         #if U_ICU_VERSION_MAJOR_NUM >= 67
+         const char *arg = Tcl_GetString(objv[i + 1]);
+         if (strcmp(arg, "and") == 0) {
+             type = ULISTFMT_TYPE_AND;
+         } else if (strcmp(arg, "or") == 0) {
+             type = ULISTFMT_TYPE_OR;
+         } else if (strcmp(arg, "units") == 0) {
+             type = ULISTFMT_TYPE_UNITS;
+         } else {
+             Tcl_SetResult(interp, "Invalid argument for -type", TCL_STATIC);
+             return TCL_ERROR;
+         }
+         #endif
+     } else if (strcmp(opt, "-width") == 0) {
+         #if U_ICU_VERSION_MAJOR_NUM >= 67
+         const char *arg = Tcl_GetString(objv[i + 1]);
+         if (strcmp(arg, "wide") == 0) {
+             width = ULISTFMT_WIDTH_WIDE;
+         } else if (strcmp(arg, "short") == 0) {
+             width = ULISTFMT_WIDTH_SHORT;
+         } else if (strcmp(arg, "narrow") == 0) {
+             width = ULISTFMT_WIDTH_NARROW;
+         } else {
+             Tcl_SetResult(interp, "Invalid argument for -width", TCL_STATIC);
+             return TCL_ERROR;
+         }
+         #endif
+     } else if (opt[0] == '-') {
+         Tcl_SetResult(interp, "Unknown option", TCL_STATIC);
+         return TCL_ERROR;
+     } else {
+         break;
+     }
+ }
+    if (i != objc - 1) {
+        Tcl_WrongNumArgs(interp, 1, objv,
+                         "?-locale locale? ?-type and|or|units? ?-width wide|short|narrow? lst");
+        return TCL_ERROR;
+    }
+
+    #if U_ICU_VERSION_MAJOR_NUM >= 67
+    UListFormatter *fmt = ulistfmt_openForType(loc, type, width, &err);
+    if (U_FAILURE(err)) {
+        set_icu_error_result(interp, "ulistfmt_openForType", err);
+        return TCL_ERROR;
+    }
+    #else
+    UListFormatter *fmt = ulistfmt_open(loc, &err);
+    if (U_FAILURE(err)) {
+        set_icu_error_result(interp, "ulistfmt_open", err);
+        return TCL_ERROR;
+    }
+    #endif
+
+    int32_t llen;
+    if (Tcl_ListObjLength(interp, objv[i], &llen) != TCL_OK) {
+        ulistfmt_close(fmt);
+        return TCL_ERROR;
+    }
+    UChar **strings = (UChar **)ckalloc(llen * sizeof(UChar *));
+    int32_t *slens = (int32_t *)ckalloc(llen * sizeof(int32_t));
+    int32_t totlen = 0;
+    for (int n = 0; n < llen; n += 1)
+    {
+     Tcl_Obj *o;
+     if (Tcl_ListObjIndex(interp, objv[i], n, &o) != TCL_OK) {
+         ckfree((char *)strings);
+         ckfree((char *)slens);
+         ulistfmt_close(fmt);
+         return TCL_ERROR;
+     }
+     strings[n] = Tcl_GetUnicodeFromObj(o, &slens[n]);
+     totlen += slens[n];
+    }
+    totlen *= 2;
+    totlen += 1;
+    UChar *result = (UChar *)ckalloc(totlen * sizeof(UChar));
+    int32_t rlen = ulistfmt_format(fmt, strings, slens, llen,
+                                   result, totlen, &err);
+    if (err == U_BUFFER_OVERFLOW_ERROR || rlen > totlen) {
+        rlen += 1;
+        result = (UChar *)ckrealloc(result, rlen * sizeof(UChar));
+        totlen = rlen;
+        err = U_ZERO_ERROR;
+        rlen = ulistfmt_format(fmt, strings, slens, llen,
+                               result, totlen, &err);
+    }
+    if (U_FAILURE(err)) {
+        set_icu_error_result(interp, "ulistfmt_format", err);
+        ckfree((char *)result);
+        ckfree((char *)strings);
+        ckfree((char *)slens);
+        ulistfmt_close(fmt);
+        return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp, Tcl_NewUnicodeObj(result, rlen));
+    ckfree((char *)result);
+    ckfree((char *)strings);
+    ckfree((char *)slens);
+    ulistfmt_close(fmt);
+    return TCL_OK;
+}
+
 namespace eval icu::string {
     proc equal args {
         set nargs [llength $args]
@@ -1010,6 +1134,11 @@ namespace eval icu::locale {
     namespace ensemble create
 }
 
+namespace eval icu::format {
+    namespace export {[a-z]*}
+    namespace ensemble create
+}
+
 proc icu::test {} {
     critcl::load
     puts "Using ICU $icu::icu_version and Unicode $icu::unicode_version"
@@ -1020,9 +1149,9 @@ proc icu::test {} {
     puts "Variant: [icu::locale get variant] Country: [icu::locale get country]"
     puts "Read [icu::locale get character-orientation] and [icu::locale get line-orientation]"
 
-    puts "Known languages: {[icu::locale languages]}"
-    puts "Known countries: {[icu::locale countries]}"
-    puts "Known locales: {[icu::locale list]}"
+    puts "Known languages: {[icu::format list [icu::locale languages]]}"
+    puts "Known countries: {[icu::format list [icu::locale countries]]}"
+    puts "Known locales: {[icu::format list [icu::locale list]]}"
 
     # String searching
     set pos [icu::string first_of food od]

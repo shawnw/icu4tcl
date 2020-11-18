@@ -268,3 +268,17 @@ Returns a list of known ISO country codes.
 #### list ?pattern?
 
 Returns a list of known locales.
+
+#### format
+
+An ensemble with commands for formatting data.
+
+**TODO**: Numbers, dates, times, etc.
+
+##### list ?-locale locale? ?-type and|or|units? ?-width wide|short|narrow? lst
+
+Formats a list according to the rules specified by the options. If a
+locale is not given, uses the default one. `-type` defaults to `and`
+and `-width` defaults to `wide`. The `-type` and `-width` options have
+no effect unless using ICU 67 or newer; older versions always act like
+the defaults are used.
