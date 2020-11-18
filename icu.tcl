@@ -99,17 +99,19 @@ critcl::ccommand icu::string::length {cdata interp objc objv} {
 critcl::ccommand icu::string::compare {cdata interp objc objv} {
     int idx = 1;
     int options = U_COMPARE_CODE_POINT_ORDER;
-    _Bool nocase = 0;
+    _Bool nocase = 0, equiv = 0;
 
-    if (objc < 3 || objc > 5) {
+    if (objc < 3 || objc > 6) {
         Tcl_WrongNumArgs(interp, 1, objv,
-                         "?-nocase? ?-exclude-special-i? s1 s2");
+                         "?-equivalence? ?-nocase? ?-exclude-special-i? s1 s2");
         return TCL_ERROR;
     }
 
     while (idx < objc - 2) {
         const char *opt = Tcl_GetString(objv[idx++]);
-        if (strcmp(opt, "-nocase") == 0) {
+        if (strcmp(opt, "-equivalence") == 0) {
+            equiv = 1;
+        } else if (strcmp(opt, "-nocase") == 0) {
             nocase = 1;
         } else if (strcmp(opt, "-exclude-special-i") == 0) {
             options |= U_FOLD_CASE_EXCLUDE_SPECIAL_I;
@@ -118,14 +120,26 @@ critcl::ccommand icu::string::compare {cdata interp objc objv} {
             return TCL_ERROR;
         } else {
             Tcl_WrongNumArgs(interp, 1, objv,
-                             "?-nocase? ?-exclude-special-i? s1 s2");
+                             "?-equivalence? ?-nocase? ?-exclude-special-i? s1 s2");
             return TCL_ERROR;
         }
     }
 
     uint32_t res;
-    if (nocase) {
-        UErrorCode err = U_ZERO_ERROR;
+    UErrorCode err = U_ZERO_ERROR;
+    if (equiv) {
+        if (nocase) {
+            options |= U_COMPARE_IGNORE_CASE;
+        }
+        fprintf(stderr, "norm_compare\n");
+        res = unorm_compare(Tcl_GetUnicode(objv[idx]), -1,
+                            Tcl_GetUnicode(objv[idx+1]), -1,
+                            options, &err);
+        if (U_FAILURE(err)) {
+            set_icu_error_result(interp, "unorm_compare", err);
+            return TCL_ERROR;
+        }
+    } else if (nocase) {
         res = u_strCaseCompare(Tcl_GetUnicode(objv[idx]), -1,
                                Tcl_GetUnicode(objv[idx+1]), -1,
                                options, &err);
@@ -138,7 +152,7 @@ critcl::ccommand icu::string::compare {cdata interp objc objv} {
                                      Tcl_GetUnicode(objv[idx+1]));
     }
     Tcl_SetObjResult(interp, Tcl_NewIntObj(res));
-        return TCL_OK;
+    return TCL_OK;
 }
 
 critcl::ccommand icu::string::index {cdata interp objc objv} {
@@ -829,8 +843,8 @@ critcl::ccommand icu::locale::list {cdata interp objc objv} {
 namespace eval icu::string {
     proc equal args {
         set nargs [llength $args]
-        if {$nargs < 2 || $nargs > 4} {
-            error "icu::string equal ?-nocase? ?-exclude-special-i? string1 string2"
+        if {$nargs < 2 || $nargs > 5} {
+            error "icu::string equal ?-equivalence? ?-nocase? ?-exclude-special-i? string1 string2"
         }
         expr {[compare {*}$args] == 0}
     }
@@ -905,6 +919,10 @@ proc icu::test {} {
     puts "compare -nocase {$s} {$uc_s}: [icu::string compare -nocase $s $uc_s]"
     puts "compare -nocase -exclude-special-i {$s} {$uc_s}: [icu::string compare -exclude-special-i -nocase $s $uc_s]"
     puts "compare {$s} {$lc_s}: [icu::string compare $s $lc_s]"
+    set s "FO\u00C9"
+    set lc_s "foe\u0301"
+    puts "compare -equivalence {$s} {$lc_s}: [icu::string compare -equivalence $s $lc_s]"
+    puts "compare -equivalence -nocase {$s} {$lc_s}: [icu::string compare -equivalence -nocase $s $lc_s]"
 
     # collators
     set coll [icu::collator tr_TR]

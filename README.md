@@ -46,7 +46,7 @@ of the BMP correctly. However, due to that, most of them are also
 
 Returns the number of codepoints in the string.
 
-#### icu::string compare ?-nocase? ?-exclude-special-i? s1 s2
+#### icu::string compare ?-equivalence? ?-nocase? ?-exclude-special-i? s1 s2
 
 Compares `s1` and `s2` in code point order, returning a number less
 than 0, 0 or greater than 0 if `s1` is less than, euqal to or greater
@@ -54,11 +54,16 @@ than `s2`. `-nocase` does case-insensitive comparision, and
 `-exclude-special-i` special-cases the Turkish dotted I (U+0130) and
 dotless i U+0131) characters (Only meaningful with `-nocase`).
 
+The `-equivalence` option does Unicode equivalence
+comparision. *Canonical equivalence between two strings is defined as
+their normalized forms (NFD or NFC) being identical.*
+
 For locale-specific string comparision, see `icu::collator`.
 
-#### icu::string equal ?-nocase? ?-exclude-special-i? s1 s2
+#### icu::string equal ?-equivalence? ?-nocase? ?-exclude-special-i? s1 s2
 
-Returns 1 if the two strings are equal, 0 if not.
+Returns 1 if the two strings are equal, 0 if not. Options are the same
+as for `compare`.
 
 #### icu::string index s i
 
