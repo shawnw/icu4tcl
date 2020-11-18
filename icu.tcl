@@ -80,8 +80,6 @@ critcl::ccode {
         Tcl_SetErrorCode(interp, "ICU", u_errorName(err), (char *)NULL);
         Tcl_SetResult(interp, (char *)msg, TCL_STATIC);
      }
-
-    static UErrorCode globalErr = U_ZERO_ERROR;
 }
 
 # Return the number of codepoints in a string. Differs from 8.X [string
@@ -537,19 +535,141 @@ critcl::ccode {
 }
 
 critcl::ccommand icu::string::nfc {cdata interp objc objv} {
-    return do_normalize(unorm2_getNFCInstance(&globalErr), interp, objc, objv);
+    UErrorCode err = U_ZERO_ERROR;
+    return do_normalize(unorm2_getNFCInstance(&err), interp, objc, objv);
 }
 
 critcl::ccommand icu::string::nfd {cdata interp objc objv} {
-    return do_normalize(unorm2_getNFDInstance(&globalErr), interp, objc, objv);
+    UErrorCode err = U_ZERO_ERROR;
+    return do_normalize(unorm2_getNFDInstance(&err), interp, objc, objv);
 }
 
 critcl::ccommand icu::string::nfkc {cdata interp objc objv} {
-    return do_normalize(unorm2_getNFKCInstance(&globalErr), interp, objc, objv);
+    UErrorCode err = U_ZERO_ERROR;
+    return do_normalize(unorm2_getNFKCInstance(&err), interp, objc, objv);
 }
 
 critcl::ccommand icu::string::nfkd {cdata interp objc objv} {
-    return do_normalize(unorm2_getNFKDInstance(&globalErr), interp, objc, objv);
+    UErrorCode err = U_ZERO_ERROR;
+    return do_normalize(unorm2_getNFKDInstance(&err), interp, objc, objv);
+}
+
+critcl::ccode {
+    static int check_norm(const UNormalizer2 *form, Tcl_Interp *interp, int objc,
+                          Tcl_Obj * const *objv) {
+        UErrorCode err = U_ZERO_ERROR;
+
+        if (objc != 3) {
+           Tcl_WrongNumArgs(interp, 1, objv,
+                            "normalization-mode string");
+           return TCL_ERROR;
+        }
+
+        int32_t len;
+        Tcl_UniChar *s = Tcl_GetUnicodeFromObj(objv[2], &len);
+
+        int res = unorm2_isNormalized(form, s, len, &err);
+        if (U_FAILURE(err)) {
+            set_icu_error_result(interp, "unorm2_isNormalized", err);
+            return TCL_ERROR;
+        }
+        Tcl_SetObjResult(interp, Tcl_NewBooleanObj(res));
+        return TCL_OK;
+     }
+
+    static int check_prop(UBool (*f)(Uchar32), Tcl_Interp *interp, int objc, Tcl_Obj * const *objv) {
+        int32_t len, offset = 0;
+        UChar32 c;
+        _Bool res = 0, strict_mode = 0;
+        const Tcl_UniChar *s;
+        int idx = 2;
+
+        if (objc == 4) {
+            const char * s = Tcl_GetString(objv[2]);
+            if (strcmp(s, "-strict") == 0) {
+                strict_mode = 1;
+                idx = 3;
+            } else if (s[0] == '-') {
+                Tcl_SetResult(interp, "Unknown switch", TCL_STATIC);
+                return TCL_ERROR;
+            } else {
+                Tcl_WrongNumArgs(interp, 1, objv,
+                                 "subcommand ?-strict? string");
+                return TCL_ERROR;
+            }
+        }
+
+        s = Tcl_GetUnicodeFromObj(objv[idx], &len);
+
+        if (strict_mode && !s[0]) {
+            Tcl_SetObjResult(interp, Tcl_NewBooleanObj(0));
+            return TCL_OK;
+        }
+
+        while (1) {
+            U16_NEXT_OR_FFFD(s, offset, len, c);
+            if (!c) {
+                res = 1;
+                break;
+            }
+            if (!f(c)) {
+                res = 0;
+                break;
+            }
+        }
+        Tcl_SetObjResult(interp, Tcl_NewBooleanObj(res));
+        return TCL_OK;
+    }
+}
+
+critcl::ccommand icu::string::is {cdata interp objc objv} {
+    UErrorCode err = U_ZERO_ERROR;
+    if (objc < 3 || objc > 4) {
+        Tcl_WrongNumArgs(interp, 1, objv, "subcommand ?-strict? string");
+        return TCL_ERROR;
+    }
+
+    const char *subcommand = Tcl_GetString(objv[1]);
+    // TODO: Replace with a lookup table
+    if (strcmp(subcommand, "nfc") == 0) {
+        return check_norm(unorm2_getNFCInstance(&err), interp, objc, objv);
+    } else if (strcmp(subcommand, "nfd") == 0) {
+        return check_norm(unorm2_getNFDInstance(&err), interp, objc, objv);
+    } else if (strcmp(subcommand, "nfkc") == 0) {
+        return check_norm(unorm2_getNFKCInstance(&err), interp, objc, objv);
+    } else if (strcmp(subcommand, "nfkd") == 0) {
+        return check_norm(unorm2_getNFKDInstance(&err), interp, objc, objv);
+    } else if (strcmp(subcommand, "lower") == 0) {
+        return check_prop(u_islower, interp, objc, objv);
+    } else if (strcmp(subcommand, "upper") == 0) {
+        return check_prop(u_isupper, interp, objc, objv);
+    } else if (strcmp(subcommand, "title") == 0) {
+        return check_prop(u_istitle, interp, objc, objv);
+    } else if (strcmp(subcommand, "digit") == 0) {
+        return check_prop(u_isdigit, interp, objc, objv);
+    } else if (strcmp(subcommand, "alpha") == 0) {
+        return check_prop(u_isalpha, interp, objc, objv);
+    } else if (strcmp(subcommand, "alnum") == 0) {
+        return check_prop(u_isalnum, interp, objc, objv);
+    } else if (strcmp(subcommand, "punct") == 0) {
+        return check_prop(u_ispunct, interp, objc, objv);
+    } else if (strcmp(subcommand, "graph") == 0) {
+        return check_prop(u_isgraph, interp, objc, objv);
+    } else if (strcmp(subcommand, "blank") == 0) {
+        return check_prop(u_isblank, interp, objc, objv);
+    } else if (strcmp(subcommand, "space") == 0) {
+        return check_prop(u_isspace, interp, objc, objv);
+    } else if (strcmp(subcommand, "cntrl") == 0) {
+        return check_prop(u_iscntrl, interp, objc, objv);
+    } else if (strcmp(subcommand, "print") == 0) {
+        return check_prop(u_isprint, interp, objc, objv);
+    } else if (strcmp(subcommand, "base") == 0) {
+        return check_prop(u_isbase, interp, objc, objv);
+    } else {
+        Tcl_SetResult(interp, "unknown is subcommand", TCL_STATIC);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
 }
 
 critcl::ccode {
@@ -923,6 +1043,9 @@ proc icu::test {} {
     set lc_s "foe\u0301"
     puts "compare -equivalence {$s} {$lc_s}: [icu::string compare -equivalence $s $lc_s]"
     puts "compare -equivalence -nocase {$s} {$lc_s}: [icu::string compare -equivalence -nocase $s $lc_s]"
+
+    puts "is upper $s: [icu::string is upper $s]"
+    puts "is upper -strict {}: [icu::string is upper -strict ""]"
 
     # collators
     set coll [icu::collator tr_TR]

@@ -130,6 +130,55 @@ Returns all its arguments concatenated together and normalized in NFKC.
 
 Returns all its arguments concatenated together and normalized in NFKD.
 
+#### icu::string is subcommand string
+
+Returns true if all codepoints of the string match some condition. An
+empty string is true unless `-strict` is given, in which case it's false.
+
+##### is nfc string
+
+Is the string in NFC mode?
+
+##### is nfd string
+
+Is the string in NFD mode?
+
+##### is nfkc string
+
+Is the string in NFKC mode?
+
+##### is nfkd string
+
+Is the string in NFKD mode?
+
+##### is lower ?-strict? string
+
+##### is upper ?-strict? string
+
+##### is title ?-strict? string
+
+Is every codepoint in the string titlecased?
+
+##### is digit ?-strict? string
+
+##### is alpha ?-strict? string
+
+##### is alnum ?-strict? string
+
+##### is punct ?-strict? string
+
+##### is graph ?-strict? string
+
+##### is blank ?-strict? string
+
+##### is space ?-strict? string
+
+##### is cntrl ?-strict? string
+
+##### is base ?-strict? string
+
+Is every codepoint in the string a base character?
+
 ### icu::collator ?name? ?locale?
 
 Creates and returns the name of a new command that collates
