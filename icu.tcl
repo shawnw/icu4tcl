@@ -254,7 +254,6 @@ critcl::ccommand icu::string::compare {cdata interp objc objv} {
         if (nocase) {
             options |= U_COMPARE_IGNORE_CASE;
         }
-        fprintf(stderr, "norm_compare\n");
         res = unorm_compare(Tcl_GetUnicode(objv[idx]), -1,
                             Tcl_GetUnicode(objv[idx+1]), -1,
                             options, &err);
@@ -734,7 +733,8 @@ critcl::ccode {
         return TCL_OK;
      }
 
-    static int check_prop(UBool (*f)(Uchar32), Tcl_Interp *interp, int objc, Tcl_Obj * const *objv) {
+    typedef UBool (*prop_func)(UChar32);
+    static int check_prop(prop_func f, Tcl_Interp *interp, int objc, Tcl_Obj * const *objv) {
         int32_t len, offset = 0;
         UChar32 c;
         _Bool res = 0, strict_mode = 0;
@@ -1195,7 +1195,7 @@ critcl::ccommand icu::format::list {cdata interp objc objv} {
         ulistfmt_close(fmt);
         return TCL_ERROR;
     }
-    UChar **strings = (UChar **)ckalloc(llen * sizeof(UChar *));
+    const UChar **strings = (const UChar **)ckalloc(llen * sizeof(UChar *));
     int32_t *slens = (int32_t *)ckalloc(llen * sizeof(int32_t));
     int32_t totlen = 0;
     for (int n = 0; n < llen; n += 1)
