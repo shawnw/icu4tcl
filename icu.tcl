@@ -66,6 +66,7 @@ critcl::cinit {
     _Static_assert(sizeof(UChar) == sizeof(Tcl_UniChar),
                    "Tcl_UniChar and UChar sizes differ");
     Tcl_CreateNamespace(ip, "icu", NULL, NULL);
+    Tcl_CreateNamespace(ip, "icu::char", NULL, NULL);
     Tcl_CreateNamespace(ip, "icu::string", NULL, NULL);
     Tcl_CreateNamespace(ip, "icu::locale", NULL, NULL);
     Tcl_CreateNamespace(ip, "icu::format", NULL, NULL);
@@ -82,6 +83,49 @@ critcl::ccode {
         Tcl_SetErrorCode(interp, "ICU", u_errorName(err), (char *)NULL);
         Tcl_SetResult(interp, (char *)msg, TCL_STATIC);
      }
+}
+
+critcl::ccommand icu::char::value {cdata interp objc objv} {
+    if (objc != 2) {
+        Tcl_WrongNumArgs(interp, 1, objv, "character");
+        return TCL_ERROR;
+    }
+
+    UChar32 c = -1;
+    Tcl_UniChar *s = Tcl_GetUnicode(objv[1]);
+    U16_GET(s, 0, 0, -1, c);
+    Tcl_SetObjResult(interp, Tcl_NewIntObj(c));
+    return TCL_OK;
+}
+
+critcl::ccommand icu::char::tochar {cdata interp objc objv} {
+    if (objc != 2) {
+        Tcl_WrongNumArgs(interp, 1, objv, "character");
+        return TCL_ERROR;
+    }
+
+    UChar32 c;
+    if (Tcl_GetIntFromObj(interp, objv[1], &c) != TCL_OK) {
+        return TCL_ERROR;
+    }
+
+    if (c < UCHAR_MIN_VALUE || c > UCHAR_MAX_VALUE) {
+        Tcl_SetResult(interp, "value out of range", TCL_STATIC);
+        return TCL_ERROR;
+    }
+
+    Tcl_UniChar res[3] = { 0, 0, 0 };
+    int reslen = -1;
+    if (U16_LENGTH(c) == 1) {
+        res[0] = c;
+        reslen = 1;
+    } else {
+        res[0] = U16_LEAD(c);
+        res[1] = U16_TRAIL(c);
+        reslen = 2;
+    }
+    Tcl_SetObjResult(interp, Tcl_NewUnicodeObj(res, reslen));
+    return TCL_OK;
 }
 
 # Return the number of codepoints in a string. Differs from 8.X [string
@@ -1116,6 +1160,11 @@ critcl::ccommand icu::format::list {cdata interp objc objv} {
     return TCL_OK;
 }
 
+namespace eval icu::char {
+    namespace export {[a-z]*}
+    namespace ensemble create
+}
+
 namespace eval icu::string {
     proc equal args {
         set nargs [llength $args]
@@ -1221,6 +1270,10 @@ proc icu::test {} {
     icu::collator myColl en_US
     puts "compare {$s} {$uc_s}: [myColl $s $uc_s]"
 
+    # character stuff
+    set acp [icu::char value A]
+    puts "char value A: $acp"
+    puts "char tochar $acp: [icu::char tochar $acp]"
 }
 
 # If this is the main script...

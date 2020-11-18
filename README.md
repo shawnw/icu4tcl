@@ -17,6 +17,8 @@ now. Might turn this into a pure C extension later).
 Package
 =======
 
+    package require icu
+
 Variables
 ---------
 
@@ -34,6 +36,23 @@ Version of Unicode being used.
 
 Commands
 --------
+
+### icu::char
+
+Ensemble with various character related commands. Unless otherwise
+specified, arguments are numeric codepoints; commands that take a
+`-char` option look at the first codepoint of the argument when given
+instead of treating it like an integer.
+
+Also see `icu::string is` for classification functions.
+
+#### icu::char value c
+
+Returns the codepoint for the given character.
+
+#### icu::char tochar cp
+
+Returns the character corresponding to the given codepoint.
 
 ### icu::string
 
