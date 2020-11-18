@@ -878,6 +878,7 @@ critcl::ccommand icu::string::break {cdata interp objc objv} {
 
     Tcl_Obj *res = Tcl_NewListObj(0, NULL);
     uint32_t start_pos = 0, end_pos;
+    Tcl_IncrRefCount(res);
     while ((end_pos = ubrk_next(i)) != UBRK_DONE) {
         UChar32 c;
         U16_GET_OR_FFFD(s, 0, start_pos, len, c);
@@ -896,6 +897,7 @@ critcl::ccommand icu::string::break {cdata interp objc objv} {
     }
     ubrk_close(i);
     Tcl_SetObjResult(interp, res);
+    Tcl_DecrRefCount(res);
     return TCL_OK;
 }
 
@@ -1105,6 +1107,7 @@ critcl::ccommand icu::locale::languages {cdata interp objc objv} {
     }
 
     Tcl_Obj *langs = Tcl_NewListObj(0, NULL);
+    Tcl_IncrRefCount(langs);
     const char * const *raw = uloc_getISOLanguages();
     if (raw) {
         for (int i = 0; raw[i]; i += 1) {
@@ -1117,6 +1120,7 @@ critcl::ccommand icu::locale::languages {cdata interp objc objv} {
        }
     }
     Tcl_SetObjResult(interp, langs);
+    Tcl_DecrRefCount(langs);
     return TCL_OK;
 }
 
@@ -1132,6 +1136,7 @@ critcl::ccommand icu::locale::countries {cdata interp objc objv} {
     }
 
     Tcl_Obj *countries = Tcl_NewListObj(0, NULL);
+    Tcl_IncrRefCount(countries);
     const char * const *raw = uloc_getISOCountries();
     if (raw) {
         for (int i = 0; raw[i]; i += 1) {
@@ -1144,6 +1149,7 @@ critcl::ccommand icu::locale::countries {cdata interp objc objv} {
        }
     }
     Tcl_SetObjResult(interp, countries);
+    Tcl_DecrRefCount(countries);
     return TCL_OK;
 }
 
@@ -1166,6 +1172,7 @@ critcl::ccommand icu::locale::list {cdata interp objc objv} {
         return TCL_ERROR;
     }
     Tcl_Obj *locales = Tcl_NewListObj(0, NULL);
+    Tcl_IncrRefCount(locales);
     const char *loc;
     uint32_t len;
     while ((loc = uenum_next(raw, &len, &err))) {
@@ -1184,6 +1191,7 @@ critcl::ccommand icu::locale::list {cdata interp objc objv} {
     #else
     uint32_t nlocales = uloc_countAvailable();
     Tcl_Obj *locales = Tcl_NewListObj(0, NULL);
+    Tcl_IncrRefCount(locales);
     for (int i = 0; i < nlocales; i += 1) {
          const char *loc = uloc_getAvailable(i);
          if (!loc) { continue; }
@@ -1196,6 +1204,7 @@ critcl::ccommand icu::locale::list {cdata interp objc objv} {
      }
     #endif
     Tcl_SetObjResult(interp, locales);
+    Tcl_DecrRefCount(locales);
     return TCL_OK;
 }
 
