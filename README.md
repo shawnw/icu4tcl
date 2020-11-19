@@ -67,6 +67,24 @@ unknown names.
 
 Returns the script the given codepoint belongs to.
 
+#### icu::char is subcommand cp
+
+Tests properties of a single codepoint. Also see `icu::string is`.
+
+#### is mirrored cp
+
+Does the codepoint have the `Bidi_Mirrored` property?
+
+#### icu::char mirrorchar cp
+
+Return the mirror codepoint of the character, or the character if it
+doesn't have one.
+
+#### icu::char pairedbracket cp
+
+Return the character's paired bracket codepoint, or itself if there
+isn't one.
+
 ### icu::string
 
 Ensemble with various string-related commands. Unlike the ones in

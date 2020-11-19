@@ -214,6 +214,41 @@ critcl::ccommand icu::char::script {cdata interp objc objv} {
     }
 }
 
+critcl::ccommand icu::char::is {cdata interp objc objv} {
+    if (objc != 3) {
+        Tcl_WrongNumArgs(interp, 1, objv, "subcommand codepoint");
+        return TCL_ERROR;
+    }
+
+    UChar32 cp;
+    if (Tcl_GetIntFromObj(interp, objv[2], &cp) != TCL_OK) {
+        return TCL_ERROR;
+    }
+
+    if (cp < UCHAR_MIN_VALUE || cp > UCHAR_MAX_VALUE) {
+        Tcl_SetResult(interp, "codepoint out of range", TCL_STATIC);
+        return TCL_ERROR;
+    }
+
+    const char *subcommand = Tcl_GetString(objv[1]);
+
+    if (strcmp(subcommand, "mirrored") == 0) {
+        Tcl_SetObjResult(interp, Tcl_NewBooleanObj(u_isMirrored(cp)));
+    } else {
+        Tcl_SetResult(interp, "unknown subcommand", TCL_STATIC);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+critcl::cproc icu::char::mirrorchar {int cp} int {
+    return u_charMirror(cp);
+}
+
+critcl::cproc icu::char::pairedbracket {int cp} int {
+    return u_getBidiPairedBracket(cp);
+}
+
 # Return the number of codepoints in a string. Differs from 8.X [string
 # length] for surrogate pairs.
 critcl::ccommand icu::string::length {cdata interp objc objv} {
@@ -1453,6 +1488,10 @@ proc icu::test {} {
     puts "char name $acp: $name"
     puts "char lookup {$name}: [icu::char lookup $name]"
     puts "char script $acp: [icu::char script $acp]"
+    set cp [icu::char value \(]
+    puts "char ismirrored \(: [icu::char is mirrored $cp]"
+    puts "char mirrorchar \(: [icu::char tochar [icu::char mirrorchar $cp]]"
+    puts "char pairedbracket \(: [icu::char tochar [icu::char pairedbracket $cp]]"
 
     # Breaks
     set s "Fee fie foe fum."
