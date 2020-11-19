@@ -64,6 +64,7 @@ critcl::ccode {
     #include <unicode/uloc.h>
     #include <unicode/unorm2.h>
     #include <unicode/ulistformatter.h>
+    #include <math.h>
     #include <stdlib.h>
     #include <stdio.h>
     #include <string.h>
@@ -255,6 +256,11 @@ critcl::cproc icu::char::decimal {int cp} int {
 
 critcl::cproc icu::char::digit {int cp int {radix 10}} int {
     return u_digit(cp, radix);
+}
+
+critcl::cproc icu::char::number {int cp} double {
+    double d = u_getNumericValue(cp);
+    return d == U_NO_NUMERIC_VALUE ? NAN : d;
 }
 
 # Return the number of codepoints in a string. Differs from 8.X [string
@@ -1503,6 +1509,7 @@ proc icu::test {} {
     set cp [icu::char value 9]
     puts "char decimal $cp: [icu::char decimal $cp]"
     puts "char digit $cp 16: [icu::char digit $cp 16]"
+    puts "char number 0x00BC: [icu::char number 0x00BC]"
 
     # Breaks
     set s "Fee fie foe fum."

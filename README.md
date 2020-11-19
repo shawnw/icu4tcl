@@ -94,6 +94,10 @@ Returns the decimal digit value of a decimal digit character, or -1.
 Returns the decimal digit value of the character in the specified
 radix (Defaults to 10), or -1. Radix can be between 2 and 36.
 
+#### icu::char number cp
+
+Returns the floating-point value of the character, or NaN.
+
 ### icu::string
 
 Ensemble with various string-related commands. Unlike the ones in
