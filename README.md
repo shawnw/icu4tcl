@@ -285,16 +285,16 @@ Returns the name of the locale used by the collator command.
 Returns -1, 0 or 1 depending on if `s1` is less than, equal to, or
 greater than `s2` according to the collator's rules.
 
-### locale
+### icu::locale
 
 An ensemble with various locale-related commands.
 
-#### default ?locale?
+#### icu::locale default ?locale?
 
 Return the default locale. With an argument, also sets the default to
 that.
 
-#### get
+#### icu::locale get
 
 Returns information about a given locale, or the default one if no
 locale is specified.
@@ -335,19 +335,19 @@ Returns `left-to-right` or `right-to-left` or `unknown`.
 
 Returns `top-to-bottom` or `bottom-to-top` or `unknown`.
 
-#### languages ?pattern?
+#### icu::locale languages ?pattern?
 
 Returns a list of known ISO language codes.
 
-#### countries ?pattern?
+#### icu::locale countries ?pattern?
 
 Returns a list of known ISO country codes.
 
-#### list ?pattern?
+#### icu::locale list ?pattern?
 
 Returns a list of known locales.
 
-#### format
+#### icu::locale format
 
 An ensemble with commands for formatting data.
 
