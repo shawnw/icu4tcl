@@ -249,6 +249,14 @@ critcl::cproc icu::char::pairedbracket {int cp} int {
     return u_getBidiPairedBracket(cp);
 }
 
+critcl::cproc icu::char::decimal {int cp} int {
+    return u_charDigitValue(cp);
+}
+
+critcl::cproc icu::char::digit {int cp int {radix 10}} int {
+    return u_digit(cp, radix);
+}
+
 # Return the number of codepoints in a string. Differs from 8.X [string
 # length] for surrogate pairs.
 critcl::ccommand icu::string::length {cdata interp objc objv} {
@@ -1492,6 +1500,9 @@ proc icu::test {} {
     puts "char ismirrored \(: [icu::char is mirrored $cp]"
     puts "char mirrorchar \(: [icu::char tochar [icu::char mirrorchar $cp]]"
     puts "char pairedbracket \(: [icu::char tochar [icu::char pairedbracket $cp]]"
+    set cp [icu::char value 9]
+    puts "char decimal $cp: [icu::char decimal $cp]"
+    puts "char digit $cp 16: [icu::char digit $cp 16]"
 
     # Breaks
     set s "Fee fie foe fum."

@@ -71,7 +71,7 @@ Returns the script the given codepoint belongs to.
 
 Tests properties of a single codepoint. Also see `icu::string is`.
 
-#### is mirrored cp
+##### is mirrored cp
 
 Does the codepoint have the `Bidi_Mirrored` property?
 
@@ -84,6 +84,15 @@ doesn't have one.
 
 Return the character's paired bracket codepoint, or itself if there
 isn't one.
+
+#### icu::char decimal cp
+
+Returns the decimal digit value of a decimal digit character, or -1.
+
+#### icu::char digit cp ?radix?
+
+Returns the decimal digit value of the character in the specified
+radix (Defaults to 10), or -1. Radix can be between 2 and 36.
 
 ### icu::string
 
