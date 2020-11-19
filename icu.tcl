@@ -38,6 +38,11 @@ Components For Unicode) functionality to Tcl to improve its unicode
 handling capability.}
 
 critcl::cflags {*}[exec icu-config --cflags]
+if {$tcl_platform(os) eq "NetBSD"} {
+    critcl::cflags -I/usr/pkg/include/
+    # Might also have to set LD_LIBRARY_PATH to include /usr/pkg/lib
+    # when running.
+}
 critcl::ldflags {*}[exec icu-config --ldflags-searchpath]
 critcl::clibraries {*}[exec icu-config --ldflags-libsonly]
 
