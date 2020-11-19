@@ -67,6 +67,21 @@ unknown names.
 
 Returns the script the given codepoint belongs to.
 
+#### icu::char toupper cp
+
+Returns the upper-case version of the character if there is one,
+otherwise the character.
+
+#### icu::char tolower cp
+
+Returns the lower-case version of the character if there is one,
+otherwise the character.
+
+#### icu::char totitle cp
+
+Returns the title-case version of the character if there is one,
+otherwise the character.
+
 #### icu::char is subcommand cp
 
 Tests properties of a single codepoint. Also see `icu::string is`.

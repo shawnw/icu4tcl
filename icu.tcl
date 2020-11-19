@@ -288,6 +288,18 @@ critcl::cproc icu::char::number {int cp} double {
     return d == U_NO_NUMERIC_VALUE ? NAN : d;
 }
 
+critcl::cproc icu::char::tolower {int cp} int {
+    return u_tolower(cp);
+}
+
+critcl::cproc icu::char::toupper {int cp} int {
+    return u_toupper(cp);
+}
+
+critcl::cproc icu::char::totitle {int cp} int {
+    return u_totitle(cp);
+}
+
 # Return the number of codepoints in a string. Differs from 8.X [string
 # length] for surrogate pairs.
 critcl::ccommand icu::string::length {cdata interp objc objv} {
