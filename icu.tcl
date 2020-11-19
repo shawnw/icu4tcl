@@ -1177,7 +1177,7 @@ critcl::ccommand icu::locale::list {cdata interp objc objv} {
     uint32_t len;
     while ((loc = uenum_next(raw, &len, &err))) {
         if (U_FAILURE(err)) {
-            icu_set_result_error(interp, "uenum_next", err);
+            set_icu_error_result(interp, "uenum_next", err);
             Tcl_DecrRefCount(locales);
             return TCL_ERROR;
         }
