@@ -232,13 +232,38 @@ critcl::ccommand icu::char::is {cdata interp objc objv} {
     }
 
     const char *subcommand = Tcl_GetString(objv[1]);
-
+    UBool res = 0;
     if (strcmp(subcommand, "mirrored") == 0) {
-        Tcl_SetObjResult(interp, Tcl_NewBooleanObj(u_isMirrored(cp)));
+        res = u_isMirrored(cp);
+    } else if (strcmp(subcommand, "lower") == 0) {
+        res = u_islower(cp);
+    } else if (strcmp(subcommand, "upper") == 0) {
+        res = u_isupper(cp);
+    } else if (strcmp(subcommand, "title") == 0) {
+        res = u_istitle(cp);
+    } else if (strcmp(subcommand, "digit") == 0) {
+        res = u_isdigit(cp);
+    } else if (strcmp(subcommand, "alpha") == 0) {
+        res = u_isalpha(cp);
+    } else if (strcmp(subcommand, "alnum") == 0) {
+        res = u_isalnum(cp);
+    } else if (strcmp(subcommand, "punct") == 0) {
+        res = u_ispunct(cp);
+    } else if (strcmp(subcommand, "graph") == 0) {
+        res = u_isgraph(cp);
+    } else if (strcmp(subcommand, "blank") == 0) {
+        res = u_isblank(cp);
+    } else if (strcmp(subcommand, "space") == 0) {
+        res = u_isspace(cp);
+    } else if (strcmp(subcommand, "cntrl") == 0) {
+        res = u_iscntrl(cp);
+    } else if (strcmp(subcommand, "base") == 0) {
+        res = u_isbase(cp);
     } else {
         Tcl_SetResult(interp, "unknown subcommand", TCL_STATIC);
         return TCL_ERROR;
     }
+    Tcl_SetObjResult(interp, Tcl_NewBooleanObj(res));
     return TCL_OK;
 }
 

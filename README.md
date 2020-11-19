@@ -75,6 +75,30 @@ Tests properties of a single codepoint. Also see `icu::string is`.
 
 Does the codepoint have the `Bidi_Mirrored` property?
 
+##### is lower cp
+
+##### is upper cp
+
+##### is title cp
+
+##### is digit cp
+
+##### is alpha cp
+
+##### is alnum cp
+
+##### is punct cp
+
+##### is graph cp
+
+##### is blank cp
+
+##### is space cp
+
+##### is cntrl cp
+
+##### is base cp
+
 #### icu::char mirrorchar cp
 
 Return the mirror codepoint of the character, or the character if it
