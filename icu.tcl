@@ -28,11 +28,8 @@ if {![critcl::compiling]} {
 }
 
 critcl::tcl 8.6
-
 critcl::license {Shawn Wagner} {MIT license}
-
 critcl::summary {TCL bindings to ICU}
-
 critcl::description {This package exports ICU (International
 Components For Unicode) functionality to Tcl to improve its unicode
 handling capability.}
@@ -47,7 +44,7 @@ critcl::ldflags {*}[exec icu-config --ldflags-searchpath]
 critcl::clibraries {*}[exec icu-config --ldflags-libsonly]
 
 namespace eval icu {
-    variable version 0.1
+    variable version 0.2
     variable icu_version {}
     variable unicode_version {}
 
@@ -1571,4 +1568,4 @@ if {[info exists argv0] &&
     icu::test
 }
 
-package provide icu $icu::version
+package provide icu 0.2

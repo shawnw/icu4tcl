@@ -4,7 +4,7 @@ ICU For Tcl
 Tcl bindings for [ICU], to provide enhanced Unicode support. It tries
 to mostly provide support for things that aren't in core tcl, but
 there is some overlap between `string` functions and `icu::string`
-ones.
+ones. Much more useful with tcl 8.7.
 
 [ICU]: http://site.icu-project.org/
 
@@ -14,8 +14,22 @@ Dependencies
 tcl 8.6, and ICU libraries and headers, Critcl (At least for
 now. Might turn this into a pure C extension later).
 
+Installation
+------------
+
+Run `tclsh build.tcl [LIBRARY_PATH]`, possibly with `sudo`. If a path
+is not given, uses `info library`.
+
+License
+-------
+
+MIT.
+
 Package
 =======
+
+Usage
+-----
 
     package require icu
 
