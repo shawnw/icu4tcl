@@ -317,6 +317,10 @@ Subcommands are:
 
 Split up into individual extended grapheme clusters.
 
+##### codepoints
+
+Split up into individual numeric codepoints.
+
 ##### words
 
 Split up into individual words.

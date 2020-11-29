@@ -919,6 +919,29 @@ critcl::ccommand icu::string::is {cdata interp objc objv} {
     return TCL_OK;
 }
 
+critcl::ccode {
+    static int split_codepoints(Tcl_Interp *interp, Tcl_Obj *obj) {
+        int len;
+        const Tcl_UniChar *s = Tcl_GetUnicodeFromObj(obj, &len);
+        UChar32 c;
+        int offset = 0;
+        Tcl_Obj *lst = Tcl_NewListObj(0, NULL);
+        Tcl_IncrRefCount(lst);
+
+        U16_NEXT_OR_FFFD(s, offset, len, c);
+        while (c) {
+            if (Tcl_ListObjAppendElement(interp, lst, Tcl_NewIntObj(c)) != TCL_OK) {
+                Tcl_DecrRefCount(lst);
+                return TCL_ERROR;
+            }
+            U16_NEXT_OR_FFFD(s, offset, len, c);
+        }
+        Tcl_SetObjResult(interp, lst);
+        Tcl_DecrRefCount(lst);
+        return TCL_OK;
+    }
+}
+
 critcl::ccommand icu::string::break {cdata interp objc objv} {
     if (!(objc == 3 || objc == 5)) {
         Tcl_WrongNumArgs(interp, 1, objv, "subcommand ?-locale locale? string");
@@ -930,7 +953,9 @@ critcl::ccommand icu::string::break {cdata interp objc objv} {
     UBreakIteratorType type = UBRK_CHARACTER;
 
     const char *subcommand = Tcl_GetString(objv[1]);
-    if (strcmp(subcommand, "characters") == 0) {
+    if (strcmp(subcommand, "codepoints") == 0) {
+        return split_codepoints(interp, objv[2]);
+    } else if (strcmp(subcommand, "characters") == 0) {
         type = UBRK_CHARACTER;
     } else if (strcmp(subcommand, "words") == 0) {
         type = UBRK_WORD;
@@ -1555,6 +1580,8 @@ proc icu::test {} {
     foreach char [icu::string break characters $s] {
         puts "{$char}"
     }
+
+    puts "{[icu::string break codepoints $s]}"
 
     set s "This is a sentence. And this is another. Finally a third."
     foreach sent [icu::string break sentences $s] {
