@@ -43,13 +43,7 @@ if {$tcl_platform(os) eq "NetBSD"} {
 critcl::ldflags {*}[exec icu-config --ldflags-searchpath]
 critcl::clibraries {*}[exec icu-config --ldflags-libsonly]
 
-namespace eval icu {
-    variable version 0.2
-    variable icu_version {}
-    variable unicode_version {}
-
-    namespace export {[a-z]*}
-}
+namespace eval icu {}
 
 critcl::ccode {
     #include <unicode/uversion.h>
@@ -1443,35 +1437,9 @@ critcl::ccommand icu::format::list {cdata interp objc objv} {
     return TCL_OK;
 }
 
-namespace eval icu::char {
-    namespace export {[a-z]*}
-    namespace ensemble create
-}
+critcl::tsources icu_tcl_funcs.tcl
 
-namespace eval icu::string {
-    proc equal args {
-        set nargs [llength $args]
-        if {$nargs < 2 || $nargs > 5} {
-            error "icu::string equal ?-equivalence? ?-nocase? ?-exclude-special-i? string1 string2"
-        }
-        expr {[compare {*}$args] == 0}
-    }
-
-    namespace export {[a-z]*}
-    namespace ensemble create
-}
-
-namespace eval icu::locale {
-    namespace export {[a-z]*}
-    namespace ensemble create
-}
-
-namespace eval icu::format {
-    namespace export {[a-z]*}
-    namespace ensemble create
-}
-
-proc icu::test {} {
+proc icu::_test {} {
     critcl::load
     puts "Using ICU $icu::icu_version and Unicode $icu::unicode_version"
 
@@ -1592,7 +1560,7 @@ proc icu::test {} {
 # If this is the main script...
 if {[info exists argv0] &&
     ([file tail [info script]] eq [file tail $argv0])} {
-    icu::test
+    icu::_test
 }
 
 package provide icu 0.2
