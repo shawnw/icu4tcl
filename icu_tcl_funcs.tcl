@@ -1,7 +1,7 @@
 # Pure tcl functions
 
 namespace eval icu {
-    variable version 0.2
+    variable version 0.3
     namespace export {[a-z]*}
 }
 

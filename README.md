@@ -341,10 +341,23 @@ locale argument.
 
 Returns the name of the locale used by the collator command.
 
-#### $collator s1 s2
+#### $collator compare s1 s2
 
 Returns -1, 0 or 1 depending on if `s1` is less than, equal to, or
 greater than `s2` according to the collator's rules.
+
+#### $collator equal s1 s2
+
+Returns true or false depending on if `s1` and `s2` are equal.
+
+#### $collator greater s1 s2
+
+Returns true or false depending on if `s1` is greater than `s2` or not.
+
+#### $collator greaterorequal s1 s2
+
+Returns true or false depending on if `s1` is greater than or equal to
+`s2` or not.
 
 ### icu::locale
 

@@ -43,7 +43,10 @@ if {$tcl_platform(os) eq "NetBSD"} {
 critcl::ldflags {*}[exec icu-config --ldflags-searchpath]
 critcl::clibraries {*}[exec icu-config --ldflags-libsonly]
 
-namespace eval icu {}
+namespace eval icu {
+    variable icu_version {}
+    variable unicode_version {}
+}
 
 critcl::ccode {
     #include <unicode/uversion.h>
@@ -1016,7 +1019,7 @@ critcl::ccode {
     static int do_collator(ClientData cd, Tcl_Interp *interp, int objc,
                            Tcl_Obj * const objv[]) {
        if (objc == 2 && strcmp(Tcl_GetString(objv[1]), "-locale") == 0) {
-          UErrorCode err = U_ZERO_ERROR;
+           UErrorCode err = U_ZERO_ERROR;
            const char *name = ucol_getLocaleByType((UCollator *)cd,
                                                    ULOC_ACTUAL_LOCALE,
                                                    &err);
@@ -1032,31 +1035,50 @@ critcl::ccode {
            }
            return TCL_OK;
       }
-      if (objc != 3) {
+      if (objc != 4) {
           Tcl_WrongNumArgs(interp, 1, objv, "string string");
           return TCL_ERROR;
       }
       int res;
-      switch (ucol_strcoll((UCollator *)cd, Tcl_GetUnicode(objv[1]), -1,
-                                            Tcl_GetUnicode(objv[2]), -1)) {
-      case UCOL_EQUAL:
-         res = 0;
-         break;
-      case UCOL_GREATER:
-         res = 1;
-         break;
-      case UCOL_LESS:
-         res = -1;
-         break;
+      UCollator *coll = (UCollator *)cd;
+      const char *command = Tcl_GetString(objv[1]);
+      if (strcmp(command, "compare") == 0) {
+          switch (ucol_strcoll(coll, Tcl_GetUnicode(objv[2]), -1,
+                               Tcl_GetUnicode(objv[3]), -1)) {
+                                   case UCOL_EQUAL:
+                                   res = 0;
+                                   break;
+                                   case UCOL_GREATER:
+                                   res = 1;
+                                   break;
+                                   case UCOL_LESS:
+                                   res = -1;
+                                   break;
+                               }
+          Tcl_SetObjResult(interp, Tcl_NewIntObj(res));
+          return TCL_OK;
+      } else if (strcmp(command, "equal") == 0) {
+          res = ucol_equal(coll, Tcl_GetUnicode(objv[2]), -1,
+                            Tcl_GetUnicode(objv[3]), -1);
+      } else if (strcmp(command, "greater") == 0) {
+          res = ucol_greater(coll, Tcl_GetUnicode(objv[2]), -1,
+                             Tcl_GetUnicode(objv[3]), -1);
+      } else if (strcmp(command, "greaterorequal") == 0) {
+          res = ucol_greaterOrEqual(coll, Tcl_GetUnicode(objv[2]), -1,
+                                    Tcl_GetUnicode(objv[3]), -1);
+      } else {
+          Tcl_SetResult(interp, "Unknown subcommand", TCL_STATIC);
+          return TCL_ERROR;
       }
-      Tcl_SetObjResult(interp, Tcl_NewIntObj(res));
+      Tcl_SetObjResult(interp, Tcl_NewBooleanObj(res));
       return TCL_OK;
-    }
+   }
 }
 
 critcl::ccommand icu::collator {cdata interp objc objv} {
     static int counter = 1;
     char *name = NULL;
+    int made_name = 0;
     const char *loc = NULL;
     UErrorCode err = U_ZERO_ERROR;
 
@@ -1082,11 +1104,13 @@ critcl::ccommand icu::collator {cdata interp objc objv} {
         const char *ns = Tcl_GetCurrentNamespace(interp)->fullName;
         int len = snprintf(NULL, 0, "%s::collator%d", ns, counter);
         name = Tcl_Alloc(len + 1);
-        snprintf(name, len + 1, "%s::collator%d", ns, counter);
+        snprintf(name, len + 1, "%s%scollator%d", ns,
+                 strcmp(ns, "::") == 0 ? "" : "::", counter);
         counter += 1;
+        made_name = 1;
     }
     Tcl_CreateObjCommand(interp, name, do_collator, coll, free_collator);
-    if (objc == 2) {
+    if (made_name) {
         Tcl_SetResult(interp, name, Tcl_Free);
     } else {
         Tcl_SetObjResult(interp, objv[1]);
@@ -1516,10 +1540,10 @@ proc icu::_test {} {
     # collators
     set coll [icu::collator tr_TR]
     puts "coll name $coll and locale [$coll -locale]"
-    puts "compare {$s} {$uc_s}: [$coll $s $uc_s]"
+    puts "compare {$s} {$uc_s}: [$coll compare $s $uc_s]"
     rename $coll ""
     icu::collator myColl en_US
-    puts "compare {$s} {$uc_s}: [myColl $s $uc_s]"
+    puts "compare {$s} {$uc_s}: [myColl compare $s $uc_s]"
 
     # character stuff
     set acp [icu::char value A]
@@ -1563,4 +1587,4 @@ if {[info exists argv0] &&
     icu::_test
 }
 
-package provide icu 0.2
+package provide icu 0.3
