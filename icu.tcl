@@ -946,9 +946,10 @@ critcl::ccode {
 
 critcl::ccommand icu::string::break {cdata interp objc objv} {
     _Bool include_rules = 0;
+    _Bool include_spaces = 0;
 
-    if (!(objc == 3 || objc == 5)) {
-        Tcl_WrongNumArgs(interp, 1, objv, "subcommand ?-locale locale? string");
+    if (objc < 3 || objc > 7) {
+        Tcl_WrongNumArgs(interp, 1, objv, "subcommand ?-locale locale? ?-rule? ?-all? string");
         return TCL_ERROR;
     }
 
@@ -973,16 +974,20 @@ critcl::ccommand icu::string::break {cdata interp objc objv} {
         return TCL_ERROR;
     }
 
-    if (objc == 5) {
-        const char *opt = Tcl_GetString(objv[2]);
+    for (idx = 2; idx < objc - 1; idx += 1) {
+        const char *opt = Tcl_GetString(objv[idx]);
         if (strcmp(opt, "-locale") == 0) {
-            loc = Tcl_GetString(objv[3]);
-            idx = 4;
+            loc = Tcl_GetString(objv[idx + 1]);
+            idx += 1;
+        } else if (strcmp(opt, "-rule") == 0) {
+            include_rules = 1;
+        } else if (strcmp(opt, "-all") == 0) {
+            include_spaces = 1;
         } else if (opt[0] == '-') {
             Tcl_SetResult(interp, "Uknown option", TCL_STATIC);
             return TCL_ERROR;
         } else {
-            Tcl_WrongNumArgs(interp, 1, objv, "subcommand ?-locale locale? string");
+            Tcl_WrongNumArgs(interp, 1, objv, "subcommand ?-locale locale? ?-rule? ?-all? string");
             return TCL_ERROR;
         }
     }
@@ -1000,11 +1005,13 @@ critcl::ccommand icu::string::break {cdata interp objc objv} {
     uint32_t start_pos = 0, end_pos;
     Tcl_IncrRefCount(res);
     while ((end_pos = ubrk_next(i)) != UBRK_DONE) {
-        UChar32 c;
-        U16_GET_OR_FFFD(s, 0, start_pos, len, c);
-        if (type == UBRK_WORD && u_isspace(c)) {
-            start_pos = end_pos;
-            continue;
+        if (type == UBRK_WORD && !include_spaces) {
+            UChar32 c;
+            U16_GET_OR_FFFD(s, 0, start_pos, len, c);
+            if (u_isspace(c)) {
+                start_pos = end_pos;
+                continue;
+            }
         }
 
         if (include_rules) {
@@ -1024,13 +1031,35 @@ critcl::ccommand icu::string::break {cdata interp objc objv} {
 
             switch (type) {
                 case UBRK_LINE:
-
                 if (rule >= UBRK_LINE_SOFT && rule < UBRK_LINE_SOFT_LIMIT) {
                     break_type = "soft";
                 } else if (rule >= UBRK_LINE_HARD && rule < UBRK_LINE_HARD_LIMIT) {
                     break_type = "hard";
                 }
                 break;
+
+                case UBRK_WORD:
+                if (rule >= UBRK_WORD_NONE && rule < UBRK_WORD_NONE_LIMIT) {
+                    break_type = "none";
+                } else if (rule >= UBRK_WORD_NUMBER && rule < UBRK_WORD_NUMBER_LIMIT) {
+                    break_type = "number";
+                } else if (rule >= UBRK_WORD_LETTER && rule < UBRK_WORD_LETTER_LIMIT) {
+                    break_type = "letter";
+                } else if (rule >= UBRK_WORD_KANA && rule < UBRK_WORD_KANA_LIMIT) {
+                    break_type = "kana";
+                } else if (rule >= UBRK_WORD_IDEO && rule < UBRK_WORD_IDEO_LIMIT) {
+                    break_type = "ideo";
+                }
+                break;
+
+                case UBRK_SENTENCE:
+                if (rule >= UBRK_SENTENCE_TERM && rule < UBRK_SENTENCE_TERM_LIMIT) {
+                    break_type = "term";
+                } else if (rule >= UBRK_SENTENCE_SEP && rule < UBRK_SENTENCE_SEP_LIMIT) {
+                    break_type = "sep";
+                }
+                break;
+
                 default:
                 (void)0;
             }
@@ -1624,6 +1653,10 @@ proc icu::_test {} {
         puts "{$word}"
     }
 
+    foreach word [icu::string break words -rule -all $s] {
+        puts "{$word}"
+    }
+
     set s "foe\u0301 man"
     foreach char [icu::string break characters $s] {
         puts "{$char}"
@@ -1633,6 +1666,10 @@ proc icu::_test {} {
 
     set s "This is a sentence. And this is another. Finally a third."
     foreach sent [icu::string break sentences $s] {
+        puts "{$sent}"
+    }
+
+    foreach sent [icu::string break sentences -rule $s] {
         puts "{$sent}"
     }
 
@@ -1647,4 +1684,4 @@ if {[info exists argv0] &&
     icu::_test
 }
 
-package provide icu 0.4
+package provide icu 0.5

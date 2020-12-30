@@ -307,10 +307,12 @@ Is every codepoint in the string titlecased?
 
 Is every codepoint in the string a base character?
 
-#### icu::string break subcommand ?-locale locale? s
+#### icu::string break subcommand ?-locale locale? ?-rule? ?-all? s
 
-Returns a list of components of the string, broken up according to
-the `subcommand` and optional locale.
+Returns a list of components of the string, broken up according to the
+`subcommand` and optional locale. If `-rule` is given, the `words` and
+`sentences` breaks return lists of pairs, with the second elements
+giving extra information about the reason for the break.
 
 Subcommands are:
 
@@ -324,7 +326,9 @@ Split up into individual numeric codepoints.
 
 ##### words
 
-Split up into individual words.
+Split up into individual words. If `-all` is given, includes the
+spaces between words as their own entries, otherwise leaves them out
+of the results.
 
 ##### sentences
 
