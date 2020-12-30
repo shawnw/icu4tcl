@@ -945,6 +945,8 @@ critcl::ccode {
 }
 
 critcl::ccommand icu::string::break {cdata interp objc objv} {
+    _Bool include_rules = 0;
+
     if (!(objc == 3 || objc == 5)) {
         Tcl_WrongNumArgs(interp, 1, objv, "subcommand ?-locale locale? string");
         return TCL_ERROR;
@@ -963,6 +965,9 @@ critcl::ccommand icu::string::break {cdata interp objc objv} {
         type = UBRK_WORD;
     } else if (strcmp(subcommand, "sentences") == 0) {
         type = UBRK_SENTENCE;
+    } else if (strcmp(subcommand, "lines") == 0) {
+        type = UBRK_LINE;
+        include_rules = 1;
     } else {
         Tcl_SetResult(interp, "Uknown subcommand", TCL_STATIC);
         return TCL_ERROR;
@@ -1001,12 +1006,58 @@ critcl::ccommand icu::string::break {cdata interp objc objv} {
             start_pos = end_pos;
             continue;
         }
-        if (Tcl_ListObjAppendElement(interp, res,
-                                     Tcl_NewUnicodeObj(s + start_pos,
-                                                       end_pos - start_pos)) != TCL_OK) {
-            Tcl_DecrRefCount(res);
-            ubrk_close(i);
-            return TCL_ERROR;
+
+        if (include_rules) {
+            int32_t rule = ubrk_getRuleStatus(i);
+            const char *break_type = "";
+            Tcl_Obj *pair = Tcl_NewListObj(0, NULL);
+            Tcl_IncrRefCount(pair);
+            if (Tcl_ListObjAppendElement(interp, pair,
+                                         Tcl_NewUnicodeObj(s + start_pos,
+                                                           end_pos - start_pos))
+                != TCL_OK) {
+                Tcl_DecrRefCount(pair);
+                Tcl_DecrRefCount(res);
+                ubrk_close(i);
+                return TCL_ERROR;
+            }
+
+            switch (type) {
+                case UBRK_LINE:
+
+                if (rule >= UBRK_LINE_SOFT && rule < UBRK_LINE_SOFT_LIMIT) {
+                    break_type = "soft";
+                } else if (rule >= UBRK_LINE_HARD && rule < UBRK_LINE_HARD_LIMIT) {
+                    break_type = "hard";
+                }
+                break;
+                default:
+                (void)0;
+            }
+
+            if (Tcl_ListObjAppendElement(interp, pair, Tcl_NewStringObj(break_type, -1))
+                != TCL_OK) {
+                Tcl_DecrRefCount(pair);
+                Tcl_DecrRefCount(res);
+                ubrk_close(i);
+                return TCL_ERROR;
+            }
+            if (Tcl_ListObjAppendElement(interp, res, pair) != TCL_OK) {
+                Tcl_DecrRefCount(pair);
+                Tcl_DecrRefCount(res);
+                ubrk_close(i);
+                return TCL_ERROR;
+            }
+            Tcl_DecrRefCount(pair);
+        } else {
+            if (Tcl_ListObjAppendElement(interp, res,
+                                         Tcl_NewUnicodeObj(s + start_pos,
+                                                           end_pos - start_pos))
+                != TCL_OK) {
+                Tcl_DecrRefCount(res);
+                ubrk_close(i);
+                return TCL_ERROR;
+            }
         }
         start_pos = end_pos;
     }
@@ -1583,6 +1634,10 @@ proc icu::_test {} {
     set s "This is a sentence. And this is another. Finally a third."
     foreach sent [icu::string break sentences $s] {
         puts "{$sent}"
+    }
+
+    foreach line [icu::string break lines $s] {
+        puts "{$line}"
     }
 }
 

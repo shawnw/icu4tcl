@@ -330,6 +330,13 @@ Split up into individual words.
 
 Split up into sentences.
 
+##### lines
+
+Find line breaks. The list it returns is of pairs, with the first
+element being text, and the second the type of break that follows that
+text - `soft` for suggested break points, `hard` for mandatory break
+points.
+
 ### icu::collator ?name? ?locale?
 
 Creates and returns the name of a new command that collates
