@@ -69,6 +69,7 @@ critcl::cinit {
                    "Tcl_UniChar and UChar sizes differ");
     Tcl_CreateNamespace(ip, "icu", NULL, NULL);
     Tcl_CreateNamespace(ip, "icu::char", NULL, NULL);
+    Tcl_CreateNamespace(ip, "icu::char::is", NULL, NULL);
     Tcl_CreateNamespace(ip, "icu::string", NULL, NULL);
     Tcl_CreateNamespace(ip, "icu::locale", NULL, NULL);
     Tcl_CreateNamespace(ip, "icu::format", NULL, NULL);
@@ -209,56 +210,60 @@ critcl::ccommand icu::char::script {cdata interp objc objv} {
     }
 }
 
-critcl::ccommand icu::char::is {cdata interp objc objv} {
-    if (objc != 3) {
-        Tcl_WrongNumArgs(interp, 1, objv, "subcommand codepoint");
-        return TCL_ERROR;
-    }
+critcl::cproc icu::char::is::mirrored {int cp} boolean {
+    return u_isMirrored(cp);
+}
 
-    UChar32 cp;
-    if (Tcl_GetIntFromObj(interp, objv[2], &cp) != TCL_OK) {
-        return TCL_ERROR;
-    }
+critcl::cproc icu::char::is::lower {int cp} boolean {
+    return u_islower(cp);
+}
 
-    if (cp < UCHAR_MIN_VALUE || cp > UCHAR_MAX_VALUE) {
-        Tcl_SetResult(interp, "codepoint out of range", TCL_STATIC);
-        return TCL_ERROR;
-    }
+critcl::cproc icu::char::is::upper {int cp} boolean {
+    return u_isupper(cp);
+}
 
-    const char *subcommand = Tcl_GetString(objv[1]);
-    UBool res = 0;
-    if (strcmp(subcommand, "mirrored") == 0) {
-        res = u_isMirrored(cp);
-    } else if (strcmp(subcommand, "lower") == 0) {
-        res = u_islower(cp);
-    } else if (strcmp(subcommand, "upper") == 0) {
-        res = u_isupper(cp);
-    } else if (strcmp(subcommand, "title") == 0) {
-        res = u_istitle(cp);
-    } else if (strcmp(subcommand, "digit") == 0) {
-        res = u_isdigit(cp);
-    } else if (strcmp(subcommand, "alpha") == 0) {
-        res = u_isalpha(cp);
-    } else if (strcmp(subcommand, "alnum") == 0) {
-        res = u_isalnum(cp);
-    } else if (strcmp(subcommand, "punct") == 0) {
-        res = u_ispunct(cp);
-    } else if (strcmp(subcommand, "graph") == 0) {
-        res = u_isgraph(cp);
-    } else if (strcmp(subcommand, "blank") == 0) {
-        res = u_isblank(cp);
-    } else if (strcmp(subcommand, "space") == 0) {
-        res = u_isspace(cp);
-    } else if (strcmp(subcommand, "cntrl") == 0) {
-        res = u_iscntrl(cp);
-    } else if (strcmp(subcommand, "base") == 0) {
-        res = u_isbase(cp);
-    } else {
-        Tcl_SetResult(interp, "unknown subcommand", TCL_STATIC);
-        return TCL_ERROR;
-    }
-    Tcl_SetObjResult(interp, Tcl_NewBooleanObj(res));
-    return TCL_OK;
+critcl::cproc icu::char::is::title {int cp} boolean {
+    return u_istitle(cp);
+}
+
+critcl::cproc icu::char::is::digit {int cp} boolean {
+    return u_isdigit(cp);
+}
+
+critcl::cproc icu::char::is::alpha {int cp} boolean {
+    return u_isalpha(cp);
+}
+
+critcl::cproc icu::char::is::alnum {int cp} boolean {
+    return u_isalnum(cp);
+}
+
+critcl::cproc icu::char::is::punct {int cp} boolean {
+    return u_ispunct(cp);
+}
+
+critcl::cproc icu::char::is::graph {int cp} boolean {
+    return u_isgraph(cp);
+}
+
+critcl::cproc icu::char::is::blank {int cp} boolean {
+    return u_isblank(cp);
+}
+
+critcl::cproc icu::char::is::space {int cp} boolean {
+    return u_isspace(cp);
+}
+
+critcl::cproc icu::char::is::cntrl {int cp} boolean {
+    return u_iscntrl(cp);
+}
+
+critcl::cproc icu::char::is::base {int cp} boolean {
+    return u_isbase(cp);
+}
+
+critcl::cproc icu::char::is::defined {int cp} boolean {
+    return u_isdefined(cp);
 }
 
 critcl::cproc icu::char::mirrorchar {int cp} int {
@@ -1587,4 +1592,4 @@ if {[info exists argv0] &&
     icu::_test
 }
 
-package provide icu 0.3
+package provide icu 0.4

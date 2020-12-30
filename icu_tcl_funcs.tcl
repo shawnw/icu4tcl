@@ -1,11 +1,16 @@
 # Pure tcl functions
 
 namespace eval icu {
-    variable version 0.3
+    variable version 0.4
     namespace export {[a-z]*}
 }
 
 namespace eval icu::char {
+    namespace export {[a-z]*}
+    namespace ensemble create
+}
+
+namespace eval icu::char::is {
     namespace export {[a-z]*}
     namespace ensemble create
 }

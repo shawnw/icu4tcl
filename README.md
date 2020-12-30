@@ -54,11 +54,8 @@ Commands
 ### icu::char
 
 Ensemble with various character related commands. Unless otherwise
-specified, arguments are numeric codepoints; (**TODO**) commands that take a
-`-char` option look at the first codepoint of the argument when given
-instead of treating it like an integer.
-
-Also see `icu::string is` for classification functions.
+specified, arguments are numeric codepoints. Also see `icu::string is`
+for classification functions that act on characters.
 
 #### icu::char value c
 
@@ -99,6 +96,10 @@ otherwise the character.
 #### icu::char is subcommand cp
 
 Tests properties of a single codepoint. Also see `icu::string is`.
+
+##### is defined cp
+
+Is this codepoint assigned a character?
 
 ##### is mirrored cp
 
